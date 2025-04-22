@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savvy Shop Whisper</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="popup.css" rel="stylesheet">
+</head>
+<body>
+  <div class="popup-container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h1>Savvy Shop Whisper</h1>
+        <span class="beta-badge">BETA</span>
+      </div>
+      
+      <div class="subscription-badge" id="subscription-badge">
+        Free Trial
+      </div>
+    </header>
+    
+    <div class="content">
+      <div class="enable-toggle">
+        <div>
+          <h2>Enable Extension</h2>
+          <p>Show overlay while browsing products</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="enable-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <div class="section">
+        <h2>Prioritize Results By</h2>
+        <div class="option-group">
+          <label class="option">
+            <input type="radio" name="prioritize" value="price" id="prioritize-price">
+            <span>Lowest Price</span>
+          </label>
+          <label class="option">
+            <input type="radio" name="prioritize" value="reviews" id="prioritize-reviews">
+            <span>Best Reviews</span>
+          </label>
+          <label class="option">
+            <input type="radio" name="prioritize" value="shipping" id="prioritize-shipping">
+            <span>Fast Shipping</span>
+          </label>
+          <label class="option">
+            <input type="radio" name="prioritize" value="balanced" id="prioritize-balanced" checked>
+            <span>Balanced</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>Display Options</h2>
+        <div class="checkbox-group">
+          <label class="checkbox">
+            <input type="checkbox" id="show-trust-scores" checked>
+            <span>Show Trust Scores</span>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="show-alternatives" checked>
+            <span>Show Alternative Products</span>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" id="notify-price-drops" checked>
+            <span>Notify on Price Drops</span>
+          </label>
+        </div>
+      </div>
+      
+      <div id="trial-banner" class="trial-banner">
+        <div>
+          <h3>Your Free Trial</h3>
+          <p><span id="days-remaining">7</span> days remaining</p>
+        </div>
+        <button class="upgrade-btn">Upgrade</button>
+      </div>
+    </div>
+    
+    <footer>
+      <div class="links">
+        <a href="#" target="_blank">Help</a>
+        <a href="#" target="_blank">Privacy</a>
+        <a href="#" target="_blank">Terms</a>
+      </div>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
