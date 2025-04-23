@@ -115,53 +115,30 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="max-w-xs w-[350px] !p-0 rounded-2xl shadow-2xl border-0 bg-gradient-to-br from-[#F1EDFC] to-[#E6FAFB] overflow-hidden"
+        className="max-w-xs w-[370px] !p-0 rounded-2xl shadow-2xl border-0 bg-gradient-to-br from-[#F1EDFC] to-[#E6FAFB] overflow-hidden"
       >
-        <div className="relative overflow-hidden">
-          <div
-            className="absolute -top-[32%] left-0 w-full h-[180px] z-0 select-none pointer-events-none"
-            style={{
-              background: "linear-gradient(115deg,#a78bfa 0%,#38bdf8 100%)",
-              borderBottomRightRadius: "80px",
-              borderBottomLeftRadius: "80px",
-              filter: "blur(0px)",
-            }}
-          />
-          <div className="absolute right-0 top-10 w-20 h-20 opacity-40 rotate-12 z-0">
-            <svg width="90" height="90">
-              <circle cx="45" cy="45" r="43" fill="#e0e7ff" />
-              <ellipse cx="75" cy="37" rx="11" ry="3" fill="#bae6fd" />
-            </svg>
-          </div>
-          <header className="relative z-10 px-7 pt-8 pb-4 flex items-start">
-            <div className="bg-white/30 shadow-md border border-white/40 w-11 h-11 mr-4 flex items-center justify-center rounded-xl backdrop-blur">
-              <svg
-                width={32}
-                height={32}
-                fill="none"
-                stroke="#8B5CF6"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ filter: "drop-shadow(0 1px 10px #a5b4fc)" }}
-              >
-                <rect width="22" height="22" x="5" y="5" rx="6" />
-                <path d="M16 10v4l2 2" />
-                <circle cx="12" cy="16.5" r="1" />
-              </svg>
-            </div>
-            <div>
-              <span className="font-extrabold text-base tracking-tight text-gray-700 drop-shadow-sm">
-                Savvy Shop Whisper
+        <div className="relative pb-2">
+          <div className="absolute inset-0 h-[160px] bg-gradient-to-tr from-savvy-purple/80 via-savvy-blue/70 to-[#d6bcfa] rounded-b-3xl blur-[1px] -z-1" />
+          <div className="relative z-10 flex flex-col items-center pt-9 pb-6">
+            <div className="mb-2 flex items-center justify-center">
+              <span className="w-12 h-12 rounded-2xl bg-white/50 flex items-center justify-center shadow-lg ring-2 ring-white/60 backdrop-blur-sm mr-0">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                  <rect x="6" y="6" width="24" height="24" rx="7" fill="#8B5CF6" />
+                  <rect x="10.5" y="10.5" width="15" height="15" rx="4" fill="#fff" opacity="0.8"/>
+                  <rect x="14" y="14" width="8" height="8" rx="2" fill="#60A5FA" opacity="0.85"/>
+                </svg>
               </span>
-              <div className="inline-block align-top ml-2 px-2 py-1 rounded-md bg-white/30 font-semibold text-xs uppercase text-savvy-purple tracking-widest shadow-sm">
-                BETA
-              </div>
-              <div className="mt-2 text-xs text-white/80 font-semibold rounded-md bg-savvy-purple/80 px-2 py-0.5 shadow-xl w-fit">
-                🚀 Try it for Free!
-              </div>
             </div>
-          </header>
+            <span className="font-extrabold text-[20px] tracking-tight text-savvy-purple drop-shadow text-center">
+              Savvy Shop Whisper
+            </span>
+            <div className="inline-block align-top mt-2 px-3 py-1 rounded-md bg-white/60 font-semibold text-xs uppercase text-savvy-purple tracking-wide shadow-sm">
+              Smart Shopping Assistant
+            </div>
+            <div className="mt-3 text-xs text-white font-semibold bg-savvy-blue/60 px-3 py-1 rounded-lg shadow-xl w-fit animate-fade-in">
+              🚀 Try it for Free!
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-between px-7 pb-2 pt-3">
@@ -213,9 +190,12 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
           <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
             {filteredProducts.length ? (
               filteredProducts.slice(0, 3).map((product) => (
-                <div
+                <a
                   key={product.id}
-                  className="flex-shrink-0 w-36 bg-white rounded-2xl shadow ring-1 ring-savvy-purple/15 p-2 flex flex-col items-center transition-all hover:scale-105 hover:shadow-xl"
+                  href={`https://www.example.com/product/${product.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 w-36 bg-white rounded-2xl shadow ring-1 ring-savvy-purple/15 p-2 flex flex-col items-center transition-all hover:scale-105 hover:shadow-xl hover:bg-savvy-blue/10 cursor-pointer group outline-none focus:ring-2 focus:ring-savvy-blue"
                   style={{ minWidth: "8.5rem" }}
                 >
                   <div
@@ -226,8 +206,8 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                   >
                     <img
                       src={product.img}
-                      className="w-full h-full object-cover"
-                      alt="product visual"
+                      className="w-full h-full object-cover transition-all group-hover:brightness-90"
+                      alt={product.name}
                     />
                   </div>
                   <div className="font-semibold text-xs text-gray-800 text-center truncate w-full mb-0.5">
@@ -261,7 +241,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                       </>
                     )}
                   </div>
-                </div>
+                </a>
               ))
             ) : (
               <div className="text-xs text-gray-400 px-2 py-4">
