@@ -1,3 +1,4 @@
+
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState } from "react";
 import {
@@ -108,6 +109,10 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
   onOpenChange,
 }) => {
   const [selectedPriority, setSelectedPriority] = useState("balanced");
+  // State for Display Options toggles:
+  const [showTrustScores, setShowTrustScores] = useState(true);
+  const [showAlternatives, setShowAlternatives] = useState(true);
+  const [notifyPriceDrops, setNotifyPriceDrops] = useState(true);
 
   const filteredProducts = getFilteredProducts(selectedPriority);
 
@@ -192,7 +197,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
               filteredProducts.slice(0, 3).map((product) => (
                 <a
                   key={product.id}
-                  href={`https://www.example.com/product/${product.id}`}
+                  href={`https://your-business-website.com/product/${product.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-shrink-0 w-36 bg-white rounded-2xl shadow ring-1 ring-savvy-purple/15 p-2 flex flex-col items-center transition-all hover:scale-105 hover:shadow-xl hover:bg-savvy-blue/10 cursor-pointer group outline-none focus:ring-2 focus:ring-savvy-blue"
@@ -228,16 +233,25 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                       <>
                         <Star size={13} className="text-yellow-400" />
                         <span>{product.reviews}</span>
+                        {showTrustScores && (
+                          <span className="ml-1 text-xs bg-savvy-green/10 text-savvy-green font-bold px-1.5 py-0.5 rounded">Trust</span>
+                        )}
                       </>
                     ) : selectedPriority === "fast" ? (
                       <>
                         <Truck size={13} className="text-savvy-blue" />
                         <span>{product.shipping}</span>
+                        {showTrustScores && (
+                          <span className="ml-1 text-xs bg-savvy-green/10 text-savvy-green font-bold px-1.5 py-0.5 rounded">Trust</span>
+                        )}
                       </>
                     ) : (
                       <>
                         <ArrowDown size={13} className="text-savvy-green" />
                         <span>Deal!</span>
+                        {showTrustScores && (
+                          <span className="ml-1 text-xs bg-savvy-green/10 text-savvy-green font-bold px-1.5 py-0.5 rounded">Trust</span>
+                        )}
                       </>
                     )}
                   </div>
@@ -256,23 +270,67 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
             Display Options
           </h2>
           <div className="flex flex-col gap-3">
-            {displayOptions.map((opt, i) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-[#8B5CF6] mr-1"
-                  defaultChecked
-                  readOnly
-                />
-                {opt.icon}
-                <span className="font-medium text-gray-700">{opt.label}</span>
-              </label>
-            ))}
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer">
+              <input
+                type="checkbox"
+                className="accent-[#8B5CF6] mr-1"
+                checked={showTrustScores}
+                onChange={() => setShowTrustScores((v) => !v)}
+              />
+              <Heart className="text-savvy-green" size={18} />
+              <span className="font-medium text-gray-700">
+                Show Trust Scores
+              </span>
+            </label>
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer">
+              <input
+                type="checkbox"
+                className="accent-[#8B5CF6] mr-1"
+                checked={showAlternatives}
+                onChange={() => setShowAlternatives((v) => !v)}
+              />
+              <ArrowUp className="text-savvy-blue" size={18} />
+              <span className="font-medium text-gray-700">
+                Show Alternative Products
+              </span>
+            </label>
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer">
+              <input
+                type="checkbox"
+                className="accent-[#8B5CF6] mr-1"
+                checked={notifyPriceDrops}
+                onChange={() => setNotifyPriceDrops((v) => !v)}
+              />
+              <Star className="text-savvy-yellow" size={18} />
+              <span className="font-medium text-gray-700">
+                Notify on Price Drops
+              </span>
+            </label>
           </div>
         </div>
+
+        {showAlternatives && (
+          <div className="px-7 mt-5">
+            <h2 className="text-sm font-semibold text-gray-700 mb-2">
+              Alternative Products
+            </h2>
+            <div className="flex flex-col gap-3">
+              {/* Placeholder for additional alternative products UI */}
+              <div className="bg-white border border-gray-100 rounded-lg px-4 py-3 shadow">
+                <div className="text-xs text-gray-500">See more alternatives coming soon!</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {notifyPriceDrops && (
+          <div className="px-7 mt-4">
+            <div className="bg-savvy-yellow/15 border border-savvy-yellow text-savvy-yellow rounded-xl px-4 py-3 text-xs font-semibold shadow flex items-center gap-2">
+              <Star className="text-savvy-yellow" size={18} />
+              We’ll notify you of price drops!
+            </div>
+          </div>
+        )}
 
         <div className="px-7 mt-8 flex justify-center">
           <div className="flex items-center w-full rounded-2xl shadow-lg bg-gradient-to-br from-[#8B5CF6]/90 via-[#3B82F6]/70 to-[#a5b4fc]/80 p-4 ring-2 ring-white/40 backdrop-blur-lg relative">
@@ -313,3 +371,4 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
 };
 
 export default PopupPreview;
+
