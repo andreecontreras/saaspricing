@@ -1,9 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
+import PopupPreview from "../components/PopupPreview";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [openPreview, setOpenPreview] = useState(false);
 
   useEffect(() => {
     // Simulate loading the extension files
@@ -17,7 +19,12 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-100 flex flex-col items-center justify-center p-6">
       <Toaster position="top-center" />
-      
+      <div className="fixed top-4 right-4 z-30">
+        <Button variant="secondary" onClick={() => setOpenPreview(true)}>
+          View Popup Preview
+        </Button>
+      </div>
+      <PopupPreview open={openPreview} onOpenChange={setOpenPreview} />
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-3xl w-full">
         <div className="flex items-center mb-8">
           <div className="bg-savvy-purple p-3 rounded-lg mr-4">
