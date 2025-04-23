@@ -1,107 +1,128 @@
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React from "react";
+import { Star, Check, Bell, ArrowUp, ArrowDown, Heart, Cog, Lock, User, X, CircleCheck, CirclePlus, CircleMinus } from "lucide-react";
 
 type PopupPreviewProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
+const prioritizeOptions = [
+  { label: "Lowest Price", icon: <ArrowDown className="text-savvy-green" size={18} />, value: "price" },
+  { label: "Best Reviews", icon: <Star className="text-yellow-400" size={18} />, value: "reviews" },
+  { label: "Fast Shipping", icon: <ArrowUp className="text-savvy-blue" size={18} />, value: "shipping" },
+  { label: "Balanced", icon: <Cog className="text-savvy-purple" size={18} />, value: "balanced" },
+];
+
+const displayOptions = [
+  { label: "Show Trust Scores", icon: <CircleCheck className="text-savvy-green" size={18} />, value: "trust" },
+  { label: "Show Alternative Products", icon: <CirclePlus className="text-savvy-blue" size={18} />, value: "alts" },
+  { label: "Notify on Price Drops", icon: <Bell className="text-savvy-yellow" size={18} />, value: "price-drops" },
+];
+
 const PopupPreview: React.FC<PopupPreviewProps> = ({ open, onOpenChange }) => {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="max-w-xs w-[340px] p-0 bg-white rounded-xl overflow-hidden border border-gray-200 shadow-xl">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="bg-[#8B5CF6] text-white w-8 h-8 rounded-md flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="10" cy="10" r="9"></circle>
-                <path d="M7.5 7.5a2.5 2.5 0 0 1 4.86.83c0 1.62-2.5 2.5-2.5 2.5"></path>
-                <line x1="10" y1="15" x2="10.01" y2="15"></line>
-              </svg>
+      <SheetContent
+        side="right"
+        className="max-w-xs w-[340px] p-0 bg-gradient-to-br from-[#ede9fe] to-[#f8fafc] rounded-xl overflow-hidden border border-gray-200 shadow-2xl"
+      >
+        {/* Fancy Header */}
+        <div className="relative">
+          <div className="absolute inset-0 rounded-b-xl" style={{
+            background: "linear-gradient(90deg, #8B5CF6 50%, #3B82F6 100%)",
+            opacity: 0.95,
+            zIndex: 0
+          }}/>
+          <header className="relative z-10 flex items-center justify-between px-6 py-5">
+            <div className="flex items-center gap-2">
+              <div className="bg-white/20 border border-white/30 text-white w-9 h-9 rounded-md flex items-center justify-center shadow-lg backdrop-blur-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="10"/>
+                  <path d="M8.5 8.5a2.5 2.5 0 0 1 4.86.8c0 1.8-2.5 2.7-2.5 2.7"/>
+                  <line x1="11" y1="16" x2="11.01" y2="16"/>
+                </svg>
+              </div>
+              <h1 className="text-base font-bold text-white tracking-tight drop-shadow">Savvy Shop Whisper</h1>
+              <span className="ml-2 bg-white/20 text-white text-[10px] font-bold px-2 py-1 rounded-full drop-shadow">BETA</span>
             </div>
-            <h1 className="text-base font-semibold">Savvy Shop Whisper</h1>
-            <span className="ml-1 bg-[#8B5CF61A] text-[#8B5CF6] text-[10px] font-semibold px-2 py-1 rounded-full">BETA</span>
-          </div>
-          <div className="bg-[#8B5CF6] text-white text-xs font-semibold px-3 py-1 rounded">Free Trial</div>
-        </header>
-        <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 120px)" }}>
-          {/* Enable toggle */}
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-sm font-semibold mb-1">Enable Extension</h2>
-              <p className="text-xs text-gray-500">Show overlay while browsing products</p>
+            <div className="flex items-center gap-2">
+              <span className="bg-white text-savvy-purple font-bold text-xs px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide">Free Trial</span>
             </div>
-            {/* Fake toggle */}
-            <span className="relative inline-block w-12 align-middle select-none">
-              <input type="checkbox" checked readOnly className="sr-only" />
-              <span className="block w-12 h-6 bg-gray-200 rounded-full shadow-inner"></span>
-              <span className="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition translate-x-6" style={{ left: 30 }}></span>
-              <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full border border-gray-200" />
-            </span>
-          </div>
+          </header>
+        </div>
 
-          {/* Prioritize section */}
-          <div className="mb-5">
-            <h2 className="text-sm font-semibold mb-2">Prioritize Results By</h2>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-3 py-2 cursor-pointer text-sm">
-                <input type="radio" name="prioritize" className="mr-2 accent-[#8B5CF6]" />
-                Lowest Price
-              </label>
-              <label className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-3 py-2 cursor-pointer text-sm">
-                <input type="radio" name="prioritize" className="mr-2 accent-[#8B5CF6]" />
-                Best Reviews
-              </label>
-              <label className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-3 py-2 cursor-pointer text-sm">
-                <input type="radio" name="prioritize" className="mr-2 accent-[#8B5CF6]" />
-                Fast Shipping
-              </label>
-              <label className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-3 py-2 cursor-pointer text-sm">
-                <input type="radio" name="prioritize" className="mr-2 accent-[#8B5CF6]" defaultChecked />
-                Balanced
-              </label>
-            </div>
-          </div>
+        <div className="pb-2" />
 
-          {/* Display Options */}
-          <div className="mb-5">
-            <h2 className="text-sm font-semibold mb-2">Display Options</h2>
-            <div className="flex flex-col gap-3">
-              <label className="flex items-center text-sm">
-                <input type="checkbox" className="mr-2 accent-[#8B5CF6]" defaultChecked />
-                Show Trust Scores
-              </label>
-              <label className="flex items-center text-sm">
-                <input type="checkbox" className="mr-2 accent-[#8B5CF6]" defaultChecked />
-                Show Alternative Products
-              </label>
-              <label className="flex items-center text-sm">
-                <input type="checkbox" className="mr-2 accent-[#8B5CF6]" defaultChecked />
-                Notify on Price Drops
-              </label>
-            </div>
+        {/* Toggle */}
+        <div className="flex items-center justify-between px-6 pb-2 pt-2">
+          <div>
+            <h2 className="text-sm font-semibold mb-1 text-gray-800 flex items-center gap-1">
+              <Lock className="text-savvy-purple mr-1" size={16} /> Enable Extension
+            </h2>
+            <p className="text-xs text-gray-500">Show overlay while browsing products</p>
           </div>
+          {/* Stylish toggle */}
+          <span className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked readOnly className="peer sr-only" />
+            <span className="w-11 h-6 bg-gray-200 peer-checked:bg-savvy-purple rounded-full transition peer-focus:ring-2 peer-focus:ring-savvy-purple/40" />
+            <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white border border-gray-300 peer-checked:border-savvy-purple rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow" />
+          </span>
+        </div>
 
-          {/* Trial Banner */}
-          <div className="rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] text-white flex justify-between items-center p-4 mb-4">
-            <div>
-              <h3 className="text-sm font-semibold">Your Free Trial</h3>
-              <p className="text-xs opacity-90"><span className="font-bold">7</span> days remaining</p>
+        {/* Prioritize Section */}
+        <div className="mt-3 px-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Prioritize Results By</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {prioritizeOptions.map((opt, i) => (
+              <label key={opt.value} className={`flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm transition-all duration-150 hover:shadow-md cursor-pointer`}>
+                <input name="prioritize" type="radio" className="accent-[#8B5CF6] mr-1" defaultChecked={opt.value==="balanced"} />
+                {opt.icon}
+                <span className="text-[13px] font-semibold text-gray-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Display Options */}
+        <div className="mt-6 px-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-2">Display Options</h2>
+          <div className="flex flex-col gap-3">
+            {displayOptions.map((opt, i) => (
+              <label key={opt.value} className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer">
+                <input type="checkbox" className="accent-[#8B5CF6] mr-1" defaultChecked />
+                {opt.icon}
+                <span className="font-medium text-gray-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Trial Banner */}
+        <div className="px-6 mt-8 flex justify-center">
+          <div className="flex items-center w-full rounded-2xl shadow-lg bg-gradient-to-br from-[#8B5CF6]/90 via-[#3B82F6]/70 to-[#a5b4fc]/80 p-4 ring-2 ring-white/40 backdrop-blur-lg relative">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-white mb-0.5 flex items-center gap-1">
+                <Heart size={15} className="inline-block text-white/90" /> Your Free Trial
+              </h3>
+              <p className="text-xs text-white/85"><span className="font-bold">7</span> days remaining</p>
             </div>
             <button
-              className="bg-white text-[#8B5CF6] rounded-md px-4 py-1.5 text-xs font-bold hover:shadow"
+              className="bg-white shadow text-savvy-purple rounded-md px-4 py-1.5 ml-4 text-xs font-bold hover:bg-savvy-green/10 active:scale-95 transition-all duration-100"
               style={{ boxShadow: "0 2px 6px 0 rgba(70,70,120,0.08)" }}
             >
               Upgrade
             </button>
           </div>
         </div>
-        <footer className="px-4 py-3 border-t border-gray-100 bg-white">
-          <div className="flex gap-4 justify-center">
-            <a href="#" className="text-xs text-gray-500 hover:text-[#8B5CF6]">Help</a>
-            <a href="#" className="text-xs text-gray-500 hover:text-[#8B5CF6]">Privacy</a>
-            <a href="#" className="text-xs text-gray-500 hover:text-[#8B5CF6]">Terms</a>
+
+        {/* Footer */}
+        <footer className="px-6 py-4 mt-3 border-t border-gray-100 bg-transparent">
+          <div className="flex gap-5 justify-center">
+            <a href="#" className="text-xs text-gray-500 hover:text-savvy-purple transition font-medium">Help</a>
+            <a href="#" className="text-xs text-gray-500 hover:text-savvy-purple transition font-medium">Privacy</a>
+            <a href="#" className="text-xs text-gray-500 hover:text-savvy-purple transition font-medium">Terms</a>
           </div>
         </footer>
       </SheetContent>
