@@ -1,4 +1,3 @@
-
 // Popup script for Savvy Shop Whisper Chrome Extension
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -14,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const daysRemaining = document.getElementById('days-remaining');
   const trialBanner = document.getElementById('trial-banner');
   const subscriptionBadge = document.getElementById('subscription-badge');
+  const settingsBtn = document.getElementById('settings-btn');
   
   // Load saved preferences
   loadPreferences();
@@ -166,4 +166,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }, 300);
     }, 2000);
   }
+  
+  // Settings button functionality
+  settingsBtn.addEventListener('click', () => {
+    chrome.runtime.openOptionsPage();
+  });
 });
