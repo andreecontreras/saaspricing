@@ -3,34 +3,71 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Get references to UI elements
   const enableToggle = document.getElementById('enable-toggle');
-  const prioritizePrice = document.getElementById('prioritize-price');
-  const prioritizeReviews = document.getElementById('prioritize-reviews');
-  const prioritizeShipping = document.getElementById('prioritize-shipping');
-  const prioritizeBalanced = document.getElementById('prioritize-balanced');
-  const showTrustScores = document.getElementById('show-trust-scores');
-  const showAlternatives = document.getElementById('show-alternatives');
-  const notifyPriceDrops = document.getElementById('notify-price-drops');
-  const daysRemaining = document.getElementById('days-remaining');
-  const trialBanner = document.getElementById('trial-banner');
-  const subscriptionBadge = document.getElementById('subscription-badge');
-  const settingsBtn = document.getElementById('settings-btn');
   
-  // Load saved preferences
-  loadPreferences();
+  // Load saved state
+  try {
+    const data = await chrome.storage.sync.get(['isEnabled']);
+    enableToggle.checked = data.isEnabled !== undefined ? data.isEnabled : true;
+  } catch (error) {
+    console.error('Error loading extension state:', error);
+  }
   
   // Set up event listener for enable toggle
   enableToggle?.addEventListener('change', async () => {
-    await savePreferences();
+    const isEnabled = enableToggle.checked;
     
-    // Update content script visibility
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type: 'TOGGLE_OVERLAY',
-          enabled: enableToggle.checked
-        });
-      }
-    });
+    // Save state
+    try {
+      await chrome.storage.sync.set({ isEnabled });
+      
+      // Send message to content script
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]?.id) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            type: 'TOGGLE_OVERLAY',
+            enabled: isEnabled
+          });
+        }
+      });
+      
+      // Visual feedback
+      const savedIndicator = document.createElement('div');
+      savedIndicator.className = 'saved-indicator';
+      savedIndicator.textContent = isEnabled ? 'Extension enabled' : 'Extension disabled';
+      savedIndicator.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(16, 185, 129, 0.9);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 1000;
+      `;
+      
+      document.body.appendChild(savedIndicator);
+      
+      // Fade in
+      setTimeout(() => {
+        savedIndicator.style.opacity = '1';
+      }, 10);
+      
+      // Fade out and remove
+      setTimeout(() => {
+        savedIndicator.style.opacity = '0';
+        setTimeout(() => {
+          savedIndicator.remove();
+        }, 300);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error saving extension state:', error);
+    }
   });
   
   // Set up events for upgrade buttons
