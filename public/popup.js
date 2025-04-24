@@ -18,18 +18,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load saved preferences
   loadPreferences();
   
-  // Load subscription status
-  loadSubscriptionStatus();
-  
-  // Set up event listeners for preference changes
-  enableToggle.addEventListener('change', savePreferences);
-  prioritizePrice.addEventListener('change', savePreferences);
-  prioritizeReviews.addEventListener('change', savePreferences);
-  prioritizeShipping.addEventListener('change', savePreferences);
-  prioritizeBalanced.addEventListener('change', savePreferences);
-  showTrustScores.addEventListener('change', savePreferences);
-  showAlternatives.addEventListener('change', savePreferences);
-  notifyPriceDrops.addEventListener('change', savePreferences);
+  // Set up event listener for enable toggle
+  enableToggle?.addEventListener('change', async () => {
+    await savePreferences();
+    
+    // Update content script visibility
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          type: 'TOGGLE_OVERLAY',
+          enabled: enableToggle.checked
+        });
+      }
+    });
+  });
   
   // Set up events for upgrade buttons
   document.querySelectorAll('.upgrade-btn').forEach(button => {

@@ -1,44 +1,4 @@
-
 // Content script for Savvy Shop Whisper Chrome Extension
-
-// Check if we're on a supported e-commerce site
-const SUPPORTED_SITES = {
-  'amazon.com': {
-    productContainer: '#dp, .dp-container',
-    priceSelector: '.a-price .a-offscreen, #priceblock_ourprice, #priceblock_dealprice',
-    titleSelector: '#productTitle',
-    imageSelector: '#landingImage, #imgBlkFront',
-    reviewSelector: '#acrCustomerReviewText, .a-icon-star'
-  },
-  'bestbuy.com': {
-    productContainer: '.shop-product-detail, .shop-product',
-    priceSelector: '.priceView-customer-price span, .pb-current-price',
-    titleSelector: '.heading-5, .v-fw-regular',
-    imageSelector: '.primary-image, .product-image',
-    reviewSelector: '.customer-rating, .c-ratings-reviews'
-  },
-  'walmart.com': {
-    productContainer: '[data-tl-id="ProductPage"], #product-overview',
-    priceSelector: '[data-automation="product-price"], .price-characteristic',
-    titleSelector: '.prod-ProductTitle, .f3, [data-automation="product-title"]',
-    imageSelector: '.hover-zoom-hero-image, .prod-HeroImage',
-    reviewSelector: '.stars-reviews-count, [data-automation="product-review-count"]'
-  },
-  'target.com': {
-    productContainer: '[data-test="product-detail"], .WIEdV',
-    priceSelector: '[data-test="product-price"], .style__PriceFontSize',
-    titleSelector: '[data-test="product-title"], .Heading__StyledHeading',
-    imageSelector: '[data-test="product-image"], .slideDeckPicture',
-    reviewSelector: '.h-padding-h-default, .RatingsMdsV2'
-  },
-  'ebay.com': {
-    productContainer: '#CenterPanelDF, .vim-buybox',
-    priceSelector: '#prcIsum, .x-price-primary',
-    titleSelector: '#itemTitle, .x-item-title',
-    imageSelector: '#icImg, .ux-image-carousel-item',
-    reviewSelector: '.reviews, .ux-seller-section__item--seller'
-  }
-};
 
 // Global state
 let overlayContainer = null;
@@ -55,6 +15,53 @@ let userPreferences = {
 
 // Initialize the extension
 async function initialize() {
+  // Load user preferences first
+  await loadUserPreferences();
+  
+  if (!userPreferences.isEnabled) {
+    console.log('Savvy Shop Whisper: Extension disabled by user');
+    return;
+  }
+  
+  // Check if we're on a supported e-commerce site
+  const SUPPORTED_SITES = {
+    'amazon.com': {
+      productContainer: '#dp, .dp-container',
+      priceSelector: '.a-price .a-offscreen, #priceblock_ourprice, #priceblock_dealprice',
+      titleSelector: '#productTitle',
+      imageSelector: '#landingImage, #imgBlkFront',
+      reviewSelector: '#acrCustomerReviewText, .a-icon-star'
+    },
+    'bestbuy.com': {
+      productContainer: '.shop-product-detail, .shop-product',
+      priceSelector: '.priceView-customer-price span, .pb-current-price',
+      titleSelector: '.heading-5, .v-fw-regular',
+      imageSelector: '.primary-image, .product-image',
+      reviewSelector: '.customer-rating, .c-ratings-reviews'
+    },
+    'walmart.com': {
+      productContainer: '[data-tl-id="ProductPage"], #product-overview',
+      priceSelector: '[data-automation="product-price"], .price-characteristic',
+      titleSelector: '.prod-ProductTitle, .f3, [data-automation="product-title"]',
+      imageSelector: '.hover-zoom-hero-image, .prod-HeroImage',
+      reviewSelector: '.stars-reviews-count, [data-automation="product-review-count"]'
+    },
+    'target.com': {
+      productContainer: '[data-test="product-detail"], .WIEdV',
+      priceSelector: '[data-test="product-price"], .style__PriceFontSize',
+      titleSelector: '[data-test="product-title"], .Heading__StyledHeading',
+      imageSelector: '[data-test="product-image"], .slideDeckPicture',
+      reviewSelector: '.h-padding-h-default, .RatingsMdsV2'
+    },
+    'ebay.com': {
+      productContainer: '#CenterPanelDF, .vim-buybox',
+      priceSelector: '#prcIsum, .x-price-primary',
+      titleSelector: '#itemTitle, .x-item-title',
+      imageSelector: '#icImg, .ux-image-carousel-item',
+      reviewSelector: '.reviews, .ux-seller-section__item--seller'
+    }
+  };
+  
   // Get the current domain
   const domain = window.location.hostname.replace('www.', '');
   
@@ -63,14 +70,6 @@ async function initialize() {
   
   if (!matchedSite) {
     console.log('Savvy Shop Whisper: Not a supported shopping site');
-    return;
-  }
-  
-  // Load user preferences
-  await loadUserPreferences();
-  
-  if (!userPreferences.isEnabled) {
-    console.log('Savvy Shop Whisper: Extension disabled by user');
     return;
   }
   
@@ -534,7 +533,7 @@ function updateOverlayWithData(data) {
             <ul class="space-y-2">
               ${data.reviewData.topPros.map(pro => `
                 <li class="text-sm flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-savvy-green mr-2 mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-savvy-green mr-2 mt-0.5">
                     <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
                     <path d="m9 12 2 2 4-4"></path>
                   </svg>
@@ -548,7 +547,7 @@ function updateOverlayWithData(data) {
             <ul class="space-y-2">
               ${data.reviewData.topCons.map(con => `
                 <li class="text-sm flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-savvy-yellow mr-2 mt-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="text-savvy-yellow mr-2 mt-0.5">
                     <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
                     <path d="M12 8v4"></path>
                     <path d="M12 16h.01"></path>
@@ -701,3 +700,26 @@ async function loadUserPreferences() {
 
 // Initialize the extension when DOM is ready
 window.addEventListener('load', initialize);
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'TOGGLE_OVERLAY') {
+    handleOverlayVisibility(message.enabled);
+    sendResponse({ success: true });
+  }
+});
+
+// Handle overlay visibility
+function handleOverlayVisibility(enabled) {
+  if (overlayContainer) {
+    overlayContainer.style.display = enabled ? 'block' : 'none';
+  }
+  
+  // Update preferences
+  userPreferences.isEnabled = enabled;
+  
+  // If enabling and we have product data, show the overlay
+  if (enabled && productData) {
+    showOverlay();
+  }
+}
