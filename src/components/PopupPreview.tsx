@@ -1,4 +1,3 @@
-
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState } from "react";
 import {
@@ -9,7 +8,9 @@ import {
   Equal,
   Heart,
   Lock,
+  BellRing
 } from "lucide-react";
+import { toast } from "sonner";
 
 const mockProducts = [
   {
@@ -109,10 +110,19 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
   onOpenChange,
 }) => {
   const [selectedPriority, setSelectedPriority] = useState("balanced");
-  // State for Display Options toggles:
   const [showTrustScores, setShowTrustScores] = useState(true);
   const [showAlternatives, setShowAlternatives] = useState(true);
-  const [notifyPriceDrops, setNotifyPriceDrops] = useState(true);
+  const [notifyPriceDrops, setNotifyPriceDrops] = useState(false);
+
+  const handleNotifyPriceDrops = () => {
+    setNotifyPriceDrops(prev => !prev);
+    if (!notifyPriceDrops) {
+      toast("Price drop notifications enabled", {
+        description: "We'll notify you when prices drop for products you're watching",
+        icon: <BellRing className="text-savvy-yellow" size={18} />,
+      });
+    }
+  };
 
   const filteredProducts = getFilteredProducts(selectedPriority);
 
@@ -265,12 +275,10 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
           </div>
         </div>
 
-        <div className="mt-5 px-7">
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">
-            Display Options
-          </h2>
+        <div className="mt-2 px-7">
+          <h2 className="text-sm font-bold text-gray-700 mb-2">Display Options</h2>
           <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer">
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer group">
               <input
                 type="checkbox"
                 className="accent-[#8B5CF6] mr-1"
@@ -282,7 +290,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                 Show Trust Scores
               </span>
             </label>
-            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer">
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer group">
               <input
                 type="checkbox"
                 className="accent-[#8B5CF6] mr-1"
@@ -294,14 +302,14 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                 Show Alternative Products
               </span>
             </label>
-            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer">
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer group">
               <input
                 type="checkbox"
                 className="accent-[#8B5CF6] mr-1"
                 checked={notifyPriceDrops}
-                onChange={() => setNotifyPriceDrops((v) => !v)}
+                onChange={handleNotifyPriceDrops}
               />
-              <Star className="text-savvy-yellow" size={18} />
+              <Star className="text-savvy-yellow group-hover:scale-110 transition-transform" size={18} />
               <span className="font-medium text-gray-700">
                 Notify on Price Drops
               </span>
@@ -309,25 +317,24 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
           </div>
         </div>
 
+        {notifyPriceDrops && (
+          <div className="px-7 mt-4">
+            <div className="bg-savvy-yellow/15 border border-savvy-yellow/30 text-savvy-yellow rounded-xl px-4 py-3 text-xs font-semibold shadow-sm flex items-center gap-2 animate-fade-in">
+              <BellRing className="text-savvy-yellow" size={18} />
+              Price drop alerts are now active!
+            </div>
+          </div>
+        )}
+
         {showAlternatives && (
           <div className="px-7 mt-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-2">
               Alternative Products
             </h2>
             <div className="flex flex-col gap-3">
-              {/* Placeholder for additional alternative products UI */}
               <div className="bg-white border border-gray-100 rounded-lg px-4 py-3 shadow">
                 <div className="text-xs text-gray-500">See more alternatives coming soon!</div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {notifyPriceDrops && (
-          <div className="px-7 mt-4">
-            <div className="bg-savvy-yellow/15 border border-savvy-yellow text-savvy-yellow rounded-xl px-4 py-3 text-xs font-semibold shadow flex items-center gap-2">
-              <Star className="text-savvy-yellow" size={18} />
-              We’ll notify you of price drops!
             </div>
           </div>
         )}
@@ -371,4 +378,3 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
 };
 
 export default PopupPreview;
-
