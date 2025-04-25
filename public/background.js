@@ -1,9 +1,8 @@
-
-// Background service worker for Savvy Shop Whisper Chrome Extension
+// Background service worker for Scout.io Chrome Extension
 
 // Listen for installation event
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('Savvy Shop Whisper extension installed');
+  console.log('Scout.io extension installed');
   
   // Set default user preferences
   await chrome.storage.sync.set({
