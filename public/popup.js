@@ -2,11 +2,26 @@
 
 // Close popup button
 document.addEventListener('DOMContentLoaded', function() {
+  // Ensure the close button works with a direct and reliable implementation
   const closeButton = document.getElementById('close-popup');
   if (closeButton) {
-    closeButton.addEventListener('click', function() {
+    // Add both click and mousedown events for better responsiveness
+    closeButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Close button clicked');
       window.close();
     });
+    
+    // Add mousedown event as an alternative trigger
+    closeButton.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Close button mousedown');
+      window.close();
+    });
+  } else {
+    console.error('Close button element not found');
   }
 
   // Save API key button
