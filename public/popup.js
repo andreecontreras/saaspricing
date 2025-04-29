@@ -1,4 +1,3 @@
-
 // Add this to your popup.js file
 
 // Save API key button
@@ -43,7 +42,8 @@ const alternativeProducts = [
     image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
     tag: "Deal!",
     reviews: 4.7,
-    shipping: "Fast"
+    shipping: "Fast",
+    quality: "High"
   },
   {
     name: "Ultra Smart Speaker",
@@ -52,7 +52,8 @@ const alternativeProducts = [
     image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=320&q=80",
     tag: "Deal!",
     reviews: 4.8,
-    shipping: "Fast"
+    shipping: "Fast",
+    quality: "Medium"
   },
   {
     name: "Eco LED Desk Lamp",
@@ -61,7 +62,8 @@ const alternativeProducts = [
     image: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
     tag: "",
     reviews: 4.2,
-    shipping: "Standard"
+    shipping: "Standard",
+    quality: "High"
   }
 ];
 
@@ -148,6 +150,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update storage and refresh any visible alternative products
     chrome.storage.sync.set({ 'prioritizeBy': mode });
     refreshAlternativeProducts(mode);
+    
+    // Update the description for balanced mode
+    if (mode === 'balanced') {
+      const descriptionElement = document.querySelector('.content .section:nth-child(2) p');
+      if (descriptionElement) {
+        descriptionElement.textContent = 'A smart mix of price, speed, quality, and reviews.';
+      }
+    }
   }
 
   chrome.storage.sync.get('prioritizeBy', function(data) {
@@ -214,42 +224,64 @@ function updateAlternativesSection(show) {
 
 // Function to filter products based on prioritization mode
 function filterProductsByMode(products, mode) {
+  console.log("Filtering by mode:", mode);
+  
   // Define products with high reviews (4.5+ stars)
   const highReviewProducts = products.filter(product => product.reviews >= 4.5);
+  console.log("High review products:", highReviewProducts.map(p => p.name));
   
   // Define products with fast shipping
   const fastShippingProducts = products.filter(product => product.shipping === "Fast");
+  console.log("Fast shipping products:", fastShippingProducts.map(p => p.name));
+  
+  // Define products with good deals
+  const dealProducts = products.filter(product => product.tag === "Deal!");
+  console.log("Deal products:", dealProducts.map(p => p.name));
+  
+  // Define high quality products
+  const highQualityProducts = products.filter(product => product.quality === "High");
+  console.log("High quality products:", highQualityProducts.map(p => p.name));
   
   switch(mode) {
     case 'price':
-      return products.filter(product => product.tag === "Deal!");
+      return dealProducts;
     case 'reviews':
       return highReviewProducts;
     case 'shipping':
       return fastShippingProducts;
     case 'balanced':
-      // For balanced mode, we need to show BOTH high review products AND fast shipping products
-      // First, add all high review products
-      const combinedProducts = [...highReviewProducts];
+      // For balanced mode, we need to show a mix of all criteria
+      const combinedSet = new Set();
       
-      // Then add fast shipping products that aren't already in the list
-      for (const product of fastShippingProducts) {
-        if (!combinedProducts.some(p => p.name === product.name)) {
-          combinedProducts.push(product);
-        }
+      // Add representative products from each category
+      if (highReviewProducts.length > 0) {
+        combinedSet.add(highReviewProducts[0]);
+      }
+      
+      if (fastShippingProducts.length > 0) {
+        const fastProduct = fastShippingProducts.find(p => !combinedSet.has(p));
+        if (fastProduct) combinedSet.add(fastProduct);
+      }
+      
+      if (dealProducts.length > 0) {
+        const dealProduct = dealProducts.find(p => !combinedSet.has(p));
+        if (dealProduct) combinedSet.add(dealProduct);
+      }
+      
+      if (highQualityProducts.length > 0) {
+        const qualityProduct = highQualityProducts.find(p => !combinedSet.has(p));
+        if (qualityProduct) combinedSet.add(qualityProduct);
       }
       
       // If we still have room, add other products
-      if (combinedProducts.length < 3) {
-        for (const product of products) {
-          if (!combinedProducts.some(p => p.name === product.name) && combinedProducts.length < 3) {
-            combinedProducts.push(product);
-          }
+      for (const product of products) {
+        if (combinedSet.size < 3 && !Array.from(combinedSet).some(p => p.name === product.name)) {
+          combinedSet.add(product);
         }
       }
       
-      console.log("Balanced mode products:", combinedProducts);
-      return combinedProducts;
+      console.log("Balanced mode products:", Array.from(combinedSet).map(p => p.name));
+      return Array.from(combinedSet);
     default:
       return products;
   }
@@ -290,7 +322,7 @@ function initAlternativeProducts() {
     
     // Create section description
     const sectionDescription = document.createElement('p');
-    sectionDescription.textContent = 'A smart mix of price, speed, and quality.';
+    sectionDescription.textContent = 'A smart mix of price, speed, quality, and reviews.';
     alternativesSection.appendChild(sectionDescription);
     
     // Create products container
@@ -398,6 +430,16 @@ function createProductCard(product) {
     shippingTag.style.backgroundColor = '#3B82F6';
     shippingTag.style.color = '#FFF';
     tagContainer.appendChild(shippingTag);
+  }
+  
+  // Quality tag if high
+  if (product.quality === "High") {
+    const qualityTag = document.createElement('span');
+    qualityTag.className = 'product-tag quality-tag';
+    qualityTag.textContent = `✨ Quality`;
+    qualityTag.style.backgroundColor = '#8B5CF6';
+    qualityTag.style.color = '#FFF';
+    tagContainer.appendChild(qualityTag);
   }
   
   // Trust badge

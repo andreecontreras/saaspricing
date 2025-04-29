@@ -1,3 +1,4 @@
+
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
 import {
@@ -8,7 +9,8 @@ import {
   Equal,
   Heart,
   Lock,
-  BellRing
+  BellRing,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,8 +22,9 @@ const mockProducts = [
     oldPrice: 64.99,
     reviews: 4.8,
     shipping: "2-3 days",
+    quality: "High",
     img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
-    tags: ["lowest", "fast", "balanced", "review"],
+    tags: ["lowest", "fast", "balanced", "review", "quality"],
   },
   {
     id: 2,
@@ -30,6 +33,7 @@ const mockProducts = [
     oldPrice: 79.0,
     reviews: 4.6,
     shipping: "1-2 days",
+    quality: "Medium",
     img: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=320&q=80",
     tags: ["review", "fast", "balanced"],
   },
@@ -40,8 +44,9 @@ const mockProducts = [
     oldPrice: 34.0,
     reviews: 4.2,
     shipping: "2 days",
+    quality: "High",
     img: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
-    tags: ["lowest", "balanced"],
+    tags: ["lowest", "balanced", "quality"],
   },
   {
     id: 4,
@@ -50,8 +55,9 @@ const mockProducts = [
     oldPrice: 62.25,
     reviews: 4.9,
     shipping: "5-7 days",
+    quality: "High",
     img: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=320&q=80",
-    tags: ["review", "balanced"],
+    tags: ["review", "balanced", "quality"],
   },
   {
     id: 5,
@@ -60,6 +66,7 @@ const mockProducts = [
     oldPrice: 155.0,
     reviews: 4.7,
     shipping: "1 day",
+    quality: "Medium",
     img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=320&q=80",
     tags: ["fast", "balanced"],
   },
@@ -106,14 +113,22 @@ const getFilteredProducts = (mode: string) => {
   console.log("High review products:", highReviewProducts.map(p => p.name));
   
   // Define fast shipping products
-  const fastShippingProducts = mockProducts.filter(p => p.tags.includes("fast"));
+  const fastShippingProducts = mockProducts.filter(p => p.shipping.includes("1-2") || p.shipping.includes("1 day"));
   console.log("Fast shipping products:", fastShippingProducts.map(p => p.name));
+  
+  // Define low price products
+  const lowestPriceProducts = mockProducts.filter(p => p.tags.includes("lowest"));
+  console.log("Lowest price products:", lowestPriceProducts.map(p => p.name));
+  
+  // Define high quality products
+  const highQualityProducts = mockProducts.filter(p => p.quality === "High");
+  console.log("High quality products:", highQualityProducts.map(p => p.name));
   
   let result;
   
   switch(mode) {
     case "lowest":
-      result = mockProducts.filter(p => p.tags.includes("lowest"));
+      result = lowestPriceProducts;
       break;
     case "review":
       result = highReviewProducts;
@@ -122,38 +137,61 @@ const getFilteredProducts = (mode: string) => {
       result = fastShippingProducts;
       break;
     case "balanced":
-      // IMPORTANT: For balanced, we MUST show both high review products AND fast shipping products
-      // Start with high review products
-      const combinedProducts = [...highReviewProducts];
+      // Create a set to store unique products
+      const combinedProducts = new Set<typeof mockProducts[0]>();
       
-      // Add fast shipping products that aren't already in the list
-      fastShippingProducts.forEach(product => {
-        const alreadyIncluded = combinedProducts.some(p => p.id === product.id);
-        if (!alreadyIncluded) {
-          combinedProducts.push(product);
-        }
-      });
+      // Ensure we have at least one product from each category if available
+      // Start with a high review product
+      if (highReviewProducts.length > 0) {
+        combinedProducts.add(highReviewProducts[0]);
+      }
       
-      // Only if we still have room, add other balanced products
+      // Add a fast shipping product (not already included)
+      const fastProduct = fastShippingProducts.find(p => 
+        !Array.from(combinedProducts).some(cp => cp.id === p.id)
+      );
+      if (fastProduct) {
+        combinedProducts.add(fastProduct);
+      }
+      
+      // Add a lowest price product (if not already included)
+      const priceProduct = lowestPriceProducts.find(p => 
+        !Array.from(combinedProducts).some(cp => cp.id === p.id)
+      );
+      if (priceProduct) {
+        combinedProducts.add(priceProduct);
+      }
+      
+      // Add a high quality product (if not already included)
+      const qualityProduct = highQualityProducts.find(p => 
+        !Array.from(combinedProducts).some(cp => cp.id === p.id)
+      );
+      if (qualityProduct) {
+        combinedProducts.add(qualityProduct);
+      }
+      
+      // If we still have room for 5 products, add other balanced tagged products
       const balancedTaggedProducts = mockProducts.filter(p => 
         p.tags.includes("balanced") && 
-        !combinedProducts.some(cp => cp.id === p.id)
+        !Array.from(combinedProducts).some(cp => cp.id === p.id)
       );
       
-      // Add remaining balanced products
-      balancedTaggedProducts.forEach(product => {
-        if (combinedProducts.length < 5) {
-          combinedProducts.push(product);
+      for (const product of balancedTaggedProducts) {
+        if (combinedProducts.size < 5) {
+          combinedProducts.add(product);
+        } else {
+          break; // We've reached our limit
         }
-      });
+      }
       
-      result = combinedProducts;
+      console.log("Balanced filtered products:", Array.from(combinedProducts).map(p => p.name));
+      result = Array.from(combinedProducts);
       break;
     default:
       result = mockProducts;
   }
   
-  console.log("Filtered products:", result.map(p => p.name));
+  console.log("Final filtered products:", result.map(p => p.name));
   return result;
 };
 
@@ -295,30 +333,34 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                     ) : null}
                   </div>
                   <div className="flex items-center justify-center text-[11px] gap-1 text-gray-500">
-                    {selectedPriority === "review" ? (
+                    {selectedPriority === "review" || (selectedPriority === "balanced" && product.reviews >= 4.5) ? (
                       <>
                         <Star size={13} className="text-yellow-400" />
                         <span>{product.reviews}</span>
-                        {showTrustScores && (
-                          <span className="ml-1 text-xs bg-savvy-green/10 text-savvy-green font-bold px-1.5 py-0.5 rounded">Trust</span>
-                        )}
                       </>
-                    ) : selectedPriority === "fast" ? (
+                    ) : selectedPriority === "fast" || (selectedPriority === "balanced" && (product.shipping.includes("1-2") || product.shipping.includes("1 day"))) ? (
                       <>
                         <Truck size={13} className="text-savvy-blue" />
                         <span>{product.shipping}</span>
-                        {showTrustScores && (
-                          <span className="ml-1 text-xs bg-savvy-green/10 text-savvy-green font-bold px-1.5 py-0.5 rounded">Trust</span>
-                        )}
                       </>
-                    ) : (
+                    ) : selectedPriority === "lowest" || (selectedPriority === "balanced" && product.tags.includes("lowest")) ? (
                       <>
                         <ArrowDown size={13} className="text-savvy-green" />
                         <span>Deal!</span>
-                        {showTrustScores && (
-                          <span className="ml-1 text-xs bg-savvy-green/10 text-savvy-green font-bold px-1.5 py-0.5 rounded">Trust</span>
-                        )}
                       </>
+                    ) : product.quality === "High" && selectedPriority === "balanced" ? (
+                      <>
+                        <Sparkles size={13} className="text-savvy-purple" />
+                        <span>Quality</span>
+                      </>
+                    ) : (
+                      <>
+                        <Equal size={13} className="text-gray-500" />
+                        <span>Value</span>
+                      </>
+                    )}
+                    {showTrustScores && (
+                      <span className="ml-1 text-xs bg-savvy-green/10 text-savvy-green font-bold px-1.5 py-0.5 rounded">Trust</span>
                     )}
                   </div>
                 </a>
@@ -389,7 +431,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
             </h2>
             <div className="flex flex-col gap-3">
               <div className="bg-white border border-gray-100 rounded-lg px-4 py-3 shadow">
-                <p className="text-xs text-gray-600 mb-2">A smart mix of price, speed, and quality.</p>
+                <p className="text-xs text-gray-600 mb-2">A smart mix of price, speed, quality, and reviews.</p>
                 <div className="grid grid-cols-3 gap-2">
                   {filteredProducts.slice(0, 3).map((product) => (
                     <div key={`alt-${product.id}`} className="bg-gray-50 rounded-md p-2 text-center">
