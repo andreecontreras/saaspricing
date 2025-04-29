@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   prioritizeReviews.addEventListener('change', function() {
-    updatePriorititization('reviews');
+    updatePrioritization('reviews');
   });
 
   prioritizeShipping.addEventListener('change', function() {
@@ -260,7 +260,7 @@ function filterProductsByMode(products, mode) {
       
       // ALWAYS include fast shipping product for balanced mode - this is critical
       if (fastShippingProducts.length > 0) {
-        // Always add at least one fast shipping product, even if we already added it as part of another category
+        // Make sure to explicitly add a fast shipping product
         combinedSet.add(fastShippingProducts[0]);
       }
       
@@ -427,7 +427,7 @@ function createProductCard(product) {
     tagContainer.appendChild(reviewTag);
   }
   
-  // Fast shipping tag if available
+  // Fast shipping tag if available - explicitly show this tag
   if (product.shipping === "Fast") {
     const shippingTag = document.createElement('span');
     shippingTag.className = 'product-tag shipping-tag';
