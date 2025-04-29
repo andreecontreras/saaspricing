@@ -1,4 +1,3 @@
-
 // Add this to your popup.js file
 
 // Save API key button
@@ -172,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   prioritizeReviews.addEventListener('change', function() {
-    updatePrioritization('reviews');
+    updatePriorititization('reviews');
   });
 
   prioritizeShipping.addEventListener('change', function() {
@@ -259,16 +258,10 @@ function filterProductsByMode(products, mode) {
         combinedSet.add(highReviewProducts[0]);
       }
       
-      // Always include fast shipping product for balanced mode
+      // ALWAYS include fast shipping product for balanced mode - this is critical
       if (fastShippingProducts.length > 0) {
-        // Try to add a fast shipping product that's not already in the set
-        const fastProduct = fastShippingProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
-        if (fastProduct) {
-          combinedSet.add(fastProduct);
-        } else if (fastShippingProducts.length > 0) {
-          // If all fast shipping products are already in the set, add the first one anyway
-          combinedSet.add(fastShippingProducts[0]);
-        }
+        // Always add at least one fast shipping product, even if we already added it as part of another category
+        combinedSet.add(fastShippingProducts[0]);
       }
       
       if (dealProducts.length > 0) {

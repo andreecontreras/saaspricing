@@ -1,4 +1,3 @@
-
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
 import {
@@ -146,13 +145,8 @@ const getFilteredProducts = (mode: string) => {
       }
       
       // ALWAYS ensure we include at least one fast shipping product in the balanced view
-      const fastProduct = fastShippingProducts.find(p => 
-        !Array.from(combinedProducts).some(cp => cp.id === p.id)
-      );
-      if (fastProduct) {
-        combinedProducts.add(fastProduct);
-      } else if (fastShippingProducts.length > 0) {
-        // If we couldn't find a unique fast shipping product, add the first one anyway
+      // This is critical - always add a fast shipping product regardless of other criteria
+      if (fastShippingProducts.length > 0) {
         combinedProducts.add(fastShippingProducts[0]);
       }
       
