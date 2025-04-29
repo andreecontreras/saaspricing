@@ -1,4 +1,3 @@
-
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
 import {
@@ -100,42 +99,62 @@ const displayOptions = [
 ];
 
 const getFilteredProducts = (mode: string) => {
+  console.log("Filtering mode:", mode);
+  
   // Define high-review products
   const highReviewProducts = mockProducts.filter(p => p.reviews >= 4.5);
+  console.log("High review products:", highReviewProducts.map(p => p.name));
   
   // Define fast shipping products
   const fastShippingProducts = mockProducts.filter(p => p.tags.includes("fast"));
+  console.log("Fast shipping products:", fastShippingProducts.map(p => p.name));
+  
+  let result;
   
   switch(mode) {
     case "lowest":
-      return mockProducts.filter(p => p.tags.includes("lowest"));
+      result = mockProducts.filter(p => p.tags.includes("lowest"));
+      break;
     case "review":
-      return mockProducts.filter(p => p.tags.includes("review"));
+      result = highReviewProducts;
+      break;
     case "fast":
-      return mockProducts.filter(p => p.tags.includes("fast"));
+      result = fastShippingProducts;
+      break;
     case "balanced":
-      // For balanced, MUST include review products AND fast shipping products
+      // IMPORTANT: For balanced, we MUST show both high review products AND fast shipping products
+      // Start with high review products
       const combinedProducts = [...highReviewProducts];
       
       // Add fast shipping products that aren't already in the list
       fastShippingProducts.forEach(product => {
-        if (!combinedProducts.some(p => p.id === product.id)) {
+        const alreadyIncluded = combinedProducts.some(p => p.id === product.id);
+        if (!alreadyIncluded) {
           combinedProducts.push(product);
         }
       });
       
-      // Optionally add balanced tagged products not already included
-      const balancedProducts = mockProducts.filter(p => p.tags.includes("balanced"));
-      balancedProducts.forEach(product => {
-        if (!combinedProducts.some(p => p.id === product.id)) {
+      // Only if we still have room, add other balanced products
+      const balancedTaggedProducts = mockProducts.filter(p => 
+        p.tags.includes("balanced") && 
+        !combinedProducts.some(cp => cp.id === p.id)
+      );
+      
+      // Add remaining balanced products
+      balancedTaggedProducts.forEach(product => {
+        if (combinedProducts.length < 5) {
           combinedProducts.push(product);
         }
       });
       
-      return combinedProducts;
+      result = combinedProducts;
+      break;
     default:
-      return mockProducts;
+      result = mockProducts;
   }
+  
+  console.log("Filtered products:", result.map(p => p.name));
+  return result;
 };
 
 const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => void }> = ({

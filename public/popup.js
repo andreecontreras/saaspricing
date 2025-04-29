@@ -42,7 +42,8 @@ const alternativeProducts = [
     oldPrice: 64.99,
     image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
     tag: "Deal!",
-    reviews: 4.7
+    reviews: 4.7,
+    shipping: "Fast"
   },
   {
     name: "Ultra Smart Speaker",
@@ -50,7 +51,8 @@ const alternativeProducts = [
     oldPrice: 79.00,
     image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=320&q=80",
     tag: "Deal!",
-    reviews: 4.8
+    reviews: 4.8,
+    shipping: "Fast"
   },
   {
     name: "Eco LED Desk Lamp",
@@ -58,7 +60,8 @@ const alternativeProducts = [
     oldPrice: null,
     image: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
     tag: "",
-    reviews: 4.2
+    reviews: 4.2,
+    shipping: "Standard"
   }
 ];
 
@@ -211,11 +214,11 @@ function updateAlternativesSection(show) {
 
 // Function to filter products based on prioritization mode
 function filterProductsByMode(products, mode) {
-  // Define products with high reviews
+  // Define products with high reviews (4.5+ stars)
   const highReviewProducts = products.filter(product => product.reviews >= 4.5);
   
-  // Define products with fast shipping (for this demo, we're using products in positions 1 and 2)
-  const fastShippingProducts = products.slice(1, 3);
+  // Define products with fast shipping
+  const fastShippingProducts = products.filter(product => product.shipping === "Fast");
   
   switch(mode) {
     case 'price':
@@ -223,27 +226,29 @@ function filterProductsByMode(products, mode) {
     case 'reviews':
       return highReviewProducts;
     case 'shipping':
-      // For shipping, we'd show products with fast shipping
       return fastShippingProducts;
     case 'balanced':
-      // For balanced, include high review products, fast shipping products AND other products
-      // This ensures we show both best reviews and fastest shipping in the balanced view
+      // For balanced mode, we need to show BOTH high review products AND fast shipping products
+      // First, add all high review products
       const combinedProducts = [...highReviewProducts];
       
-      // Add fast shipping products that aren't already in the list
-      fastShippingProducts.forEach(product => {
+      // Then add fast shipping products that aren't already in the list
+      for (const product of fastShippingProducts) {
         if (!combinedProducts.some(p => p.name === product.name)) {
           combinedProducts.push(product);
         }
-      });
+      }
       
-      // Add any other products that might be relevant
-      products.forEach(product => {
-        if (!combinedProducts.some(p => p.name === product.name)) {
-          combinedProducts.push(product);
+      // If we still have room, add other products
+      if (combinedProducts.length < 3) {
+        for (const product of products) {
+          if (!combinedProducts.some(p => p.name === product.name) && combinedProducts.length < 3) {
+            combinedProducts.push(product);
+          }
         }
-      });
+      }
       
+      console.log("Balanced mode products:", combinedProducts);
       return combinedProducts;
     default:
       return products;
@@ -378,11 +383,21 @@ function createProductCard(product) {
   // Review score if high
   if (product.reviews >= 4.5) {
     const reviewTag = document.createElement('span');
-    reviewTag.className = 'product-tag';
+    reviewTag.className = 'product-tag review-tag';
     reviewTag.textContent = `★ ${product.reviews}`;
     reviewTag.style.backgroundColor = '#FFC107';
     reviewTag.style.color = '#333';
     tagContainer.appendChild(reviewTag);
+  }
+  
+  // Fast shipping tag if available
+  if (product.shipping === "Fast") {
+    const shippingTag = document.createElement('span');
+    shippingTag.className = 'product-tag shipping-tag';
+    shippingTag.textContent = `🚚 Fast`;
+    shippingTag.style.backgroundColor = '#3B82F6';
+    shippingTag.style.color = '#FFF';
+    tagContainer.appendChild(shippingTag);
   }
   
   // Trust badge
