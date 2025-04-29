@@ -1,3 +1,4 @@
+
 // Add this to your popup.js file
 
 // Close popup button
@@ -110,16 +111,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load saved state of the toggle
   chrome.storage.sync.get('isEnabled', function(data) {
-    enableToggle.checked = data.isEnabled !== false; // Default to true
+    // Set the toggle to match stored state (default to true if not set)
+    if (enableToggle) {
+      enableToggle.checked = data.isEnabled !== false;
+      console.log('Toggle state loaded:', enableToggle.checked);
+    }
   });
 
   // Add listener to the toggle
-  enableToggle.addEventListener('change', function() {
-    chrome.storage.sync.set({ 'isEnabled': enableToggle.checked });
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {type: "TOGGLE_OVERLAY", enabled: enableToggle.checked});
+  if (enableToggle) {
+    enableToggle.addEventListener('change', function() {
+      const isEnabled = enableToggle.checked;
+      console.log('Toggle changed:', isEnabled);
+      
+      // Save state to storage
+      chrome.storage.sync.set({ 'isEnabled': isEnabled }, function() {
+        console.log('Toggle state saved:', isEnabled);
+      });
+      
+      // Send message to content script to update overlay visibility
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs && tabs[0] && tabs[0].id) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            type: "TOGGLE_OVERLAY", 
+            enabled: isEnabled
+          }, function(response) {
+            console.log('Message sent to content script:', response);
+          });
+        } else {
+          console.log('No active tab found');
+        }
+      });
     });
-  });
+  }
 
   // Load and display trial information
   chrome.storage.sync.get(['userSubscription', 'trialEndDate'], function(data) {
