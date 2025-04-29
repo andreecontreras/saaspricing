@@ -1,75 +1,85 @@
-
 // Add this to your popup.js file
 
-// Save API key button
-document.getElementById('save-api-key').addEventListener('click', function() {
-  const apiKeyInput = document.getElementById('apify-api-key');
-  const apiKey = apiKeyInput.value.trim();
-  
-  if (apiKey) {
-    chrome.runtime.sendMessage({ 
-      type: 'SAVE_APIFY_API_KEY', 
-      apiKey: apiKey 
-    }, function(response) {
-      if (response && response.success) {
-        // Show success message
-        const saveBtn = document.getElementById('save-api-key');
-        const originalText = saveBtn.textContent;
-        
-        saveBtn.textContent = 'Saved!';
-        saveBtn.style.backgroundColor = '#10b981';
-        
-        setTimeout(function() {
-          saveBtn.textContent = originalText;
-          saveBtn.style.backgroundColor = '';
-        }, 2000);
+// Close popup button
+document.addEventListener('DOMContentLoaded', function() {
+  const closeButton = document.getElementById('close-popup');
+  if (closeButton) {
+    closeButton.addEventListener('click', function() {
+      window.close();
+    });
+  }
+
+  // Save API key button
+  const saveApiKeyBtn = document.getElementById('save-api-key');
+  if (saveApiKeyBtn) {
+    saveApiKeyBtn.addEventListener('click', function() {
+      const apiKeyInput = document.getElementById('apify-api-key');
+      const apiKey = apiKeyInput.value.trim();
+      
+      if (apiKey) {
+        chrome.runtime.sendMessage({ 
+          type: 'SAVE_APIFY_API_KEY', 
+          apiKey: apiKey 
+        }, function(response) {
+          if (response && response.success) {
+            // Show success message
+            const saveBtn = document.getElementById('save-api-key');
+            const originalText = saveBtn.textContent;
+            
+            saveBtn.textContent = 'Saved!';
+            saveBtn.style.backgroundColor = '#10b981';
+            
+            setTimeout(function() {
+              saveBtn.textContent = originalText;
+              saveBtn.style.backgroundColor = '';
+            }, 2000);
+          } else {
+            // Show error
+            console.error('Failed to save API key:', response ? response.error : 'Unknown error');
+            alert('Failed to save API key. Please try again.');
+          }
+        });
       } else {
-        // Show error
-        console.error('Failed to save API key:', response ? response.error : 'Unknown error');
-        alert('Failed to save API key. Please try again.');
+        alert('Please enter a valid API key');
       }
     });
-  } else {
-    alert('Please enter a valid API key');
   }
-});
 
-// Define alternative products data
-const alternativeProducts = [
-  {
-    name: "Wireless Headphones",
-    price: 39.99,
-    oldPrice: 64.99,
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
-    tag: "Deal!",
-    reviews: 4.7,
-    shipping: "Fast",
-    quality: "High"
-  },
-  {
-    name: "Ultra Smart Speaker",
-    price: 59.00,
-    oldPrice: 79.00,
-    image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=320&q=80",
-    tag: "Deal!",
-    reviews: 4.8,
-    shipping: "Fast", 
-    quality: "Medium"
-  },
-  {
-    name: "Eco LED Desk Lamp",
-    price: 24.49,
-    oldPrice: null,
-    image: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
-    tag: "",
-    reviews: 4.2,
-    shipping: "Standard",
-    quality: "High"
-  }
-];
+  // Define alternative products data
+  const alternativeProducts = [
+    {
+      name: "Wireless Headphones",
+      price: 39.99,
+      oldPrice: 64.99,
+      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
+      tag: "Deal!",
+      reviews: 4.7,
+      shipping: "Fast",
+      quality: "High"
+    },
+    {
+      name: "Ultra Smart Speaker",
+      price: 59.00,
+      oldPrice: 79.00,
+      image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=320&q=80",
+      tag: "Deal!",
+      reviews: 4.8,
+      shipping: "Fast", 
+      quality: "Medium"
+    },
+    {
+      name: "Eco LED Desk Lamp",
+      price: 24.49,
+      oldPrice: null,
+      image: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
+      tag: "",
+      reviews: 4.2,
+      shipping: "Standard",
+      quality: "High"
+    }
+  ];
 
-// Load saved API key when popup opens
-document.addEventListener('DOMContentLoaded', function() {
+  // Load saved API key when popup opens
   // Load existing API key if available
   chrome.storage.sync.get(['apifyApiKey'], function(data) {
     if (data.apifyApiKey) {
