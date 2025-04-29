@@ -1,3 +1,4 @@
+
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
 import {
@@ -139,15 +140,20 @@ const getFilteredProducts = (mode: string) => {
       // Create a set to store unique products
       const combinedProducts = new Set<typeof mockProducts[0]>();
       
-      // ALWAYS ensure we include at least one high review product in the balanced view
-      if (highReviewProducts.length > 0) {
-        combinedProducts.add(highReviewProducts[0]);
-      }
-      
       // ALWAYS ensure we include at least one fast shipping product in the balanced view
-      // This is critical - always add a fast shipping product regardless of other criteria
+      // Place this first to prioritize it
       if (fastShippingProducts.length > 0) {
         combinedProducts.add(fastShippingProducts[0]);
+      }
+      
+      // Also include a high review product
+      if (highReviewProducts.length > 0) {
+        const reviewProduct = highReviewProducts.find(p => 
+          !Array.from(combinedProducts).some(cp => cp.id === p.id)
+        );
+        if (reviewProduct) {
+          combinedProducts.add(reviewProduct);
+        }
       }
       
       // Add a lowest price product (if not already included)
@@ -329,16 +335,16 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                     ) : null}
                   </div>
                   <div className="flex items-center justify-center text-[11px] gap-1 text-gray-500">
-                    {/* Show the appropriate tag based on product attributes and selected priority */}
-                    {selectedPriority === "review" || (selectedPriority === "balanced" && product.reviews >= 4.5) ? (
-                      <>
-                        <Star size={13} className="text-yellow-400" />
-                        <span>{product.reviews}</span>
-                      </>
-                    ) : selectedPriority === "fast" || (selectedPriority === "balanced" && (product.shipping.includes("1-2") || product.shipping.includes("1 day"))) ? (
+                    {/* Show fast shipping tag first for balanced mode */}
+                    {(product.shipping.includes("1-2") || product.shipping.includes("1 day")) ? (
                       <>
                         <Truck size={13} className="text-savvy-blue" />
                         <span>{product.shipping}</span>
+                      </>
+                    ) : selectedPriority === "review" || (selectedPriority === "balanced" && product.reviews >= 4.5) ? (
+                      <>
+                        <Star size={13} className="text-yellow-400" />
+                        <span>{product.reviews}</span>
                       </>
                     ) : selectedPriority === "lowest" || (selectedPriority === "balanced" && product.tags.includes("lowest")) ? (
                       <>

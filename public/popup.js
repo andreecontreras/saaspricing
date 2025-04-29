@@ -1,3 +1,4 @@
+
 // Add this to your popup.js file
 
 // Save API key button
@@ -52,7 +53,7 @@ const alternativeProducts = [
     image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=320&q=80",
     tag: "Deal!",
     reviews: 4.8,
-    shipping: "Fast",
+    shipping: "Fast", 
     quality: "Medium"
   },
   {
@@ -242,26 +243,33 @@ function filterProductsByMode(products, mode) {
   const highQualityProducts = products.filter(product => product.quality === "High");
   console.log("High quality products:", highQualityProducts.map(p => p.name));
   
+  let filteredProducts;
+  
   switch(mode) {
     case 'price':
-      return dealProducts;
+      filteredProducts = dealProducts;
+      break;
     case 'reviews':
-      return highReviewProducts;
+      filteredProducts = highReviewProducts;
+      break;
     case 'shipping':
-      return fastShippingProducts;
+      filteredProducts = fastShippingProducts;
+      break;
     case 'balanced':
       // For balanced mode, we need to show a mix of all criteria
       const combinedSet = new Set();
       
-      // Make sure to add at least one product from each category if available
-      if (highReviewProducts.length > 0) {
-        combinedSet.add(highReviewProducts[0]);
+      // ALWAYS ensure we include at least one fast shipping product in balanced mode
+      if (fastShippingProducts.length > 0) {
+        combinedSet.add(fastShippingProducts[0]);
       }
       
-      // ALWAYS include fast shipping product for balanced mode - this is critical
-      if (fastShippingProducts.length > 0) {
-        // Make sure to explicitly add a fast shipping product
-        combinedSet.add(fastShippingProducts[0]);
+      // Add high review product if available and not already added
+      if (highReviewProducts.length > 0) {
+        const reviewProduct = highReviewProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        if (reviewProduct) {
+          combinedSet.add(reviewProduct);
+        }
       }
       
       if (dealProducts.length > 0) {
@@ -286,10 +294,13 @@ function filterProductsByMode(products, mode) {
       }
       
       console.log("Balanced mode products:", Array.from(combinedSet).map(p => p.name));
-      return Array.from(combinedSet);
+      filteredProducts = Array.from(combinedSet);
+      break;
     default:
-      return products;
+      filteredProducts = products;
   }
+  
+  return filteredProducts;
 }
 
 // Function to refresh alternative products based on prioritization mode
@@ -427,7 +438,8 @@ function createProductCard(product) {
     tagContainer.appendChild(reviewTag);
   }
   
-  // Fast shipping tag if available - explicitly show this tag
+  // Fast shipping tag - ALWAYS show this tag when product has fast shipping
+  // This ensures the fast shipping tag is displayed regardless of mode
   if (product.shipping === "Fast") {
     const shippingTag = document.createElement('span');
     shippingTag.className = 'product-tag shipping-tag';
