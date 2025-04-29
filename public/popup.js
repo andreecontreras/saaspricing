@@ -41,21 +41,24 @@ const alternativeProducts = [
     price: 39.99,
     oldPrice: 64.99,
     image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
-    tag: "Deal!"
+    tag: "Deal!",
+    reviews: 4.7
   },
   {
     name: "Ultra Smart Speaker",
     price: 59.00,
     oldPrice: 79.00,
     image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=320&q=80",
-    tag: "Deal!"
+    tag: "Deal!",
+    reviews: 4.8
   },
   {
     name: "Eco LED Desk Lamp",
     price: 24.49,
     oldPrice: null,
     image: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
-    tag: ""
+    tag: "",
+    reviews: 4.2
   }
 ];
 
@@ -208,18 +211,21 @@ function updateAlternativesSection(show) {
 
 // Function to filter products based on prioritization mode
 function filterProductsByMode(products, mode) {
+  // Define products with high reviews
+  const highReviewProducts = products.filter(product => product.reviews >= 4.5);
+  
   switch(mode) {
     case 'price':
       return products.filter(product => product.tag === "Deal!");
     case 'reviews':
-      // For reviews, we'd show products with good reviews
-      return products.slice(0, 2); // Just as an example, show first two products
+      return highReviewProducts;
     case 'shipping':
       // For shipping, we'd show products with fast shipping
       return products.slice(1, 3); // Just as an example, show middle two products
     case 'balanced':
-      // For balanced, show a mix including best reviews
-      return products; // Show all products for balanced view
+      // For balanced, include BOTH high review products AND other products
+      // This ensures we show best reviews in the balanced view
+      return [...highReviewProducts, ...products.filter(product => !highReviewProducts.includes(product))];
     default:
       return products;
   }
@@ -348,6 +354,16 @@ function createProductCard(product) {
     tag.className = 'product-tag';
     tag.textContent = product.tag;
     tagContainer.appendChild(tag);
+  }
+  
+  // Review score if high
+  if (product.reviews >= 4.5) {
+    const reviewTag = document.createElement('span');
+    reviewTag.className = 'product-tag';
+    reviewTag.textContent = `★ ${product.reviews}`;
+    reviewTag.style.backgroundColor = '#FFC107';
+    reviewTag.style.color = '#333';
+    tagContainer.appendChild(reviewTag);
   }
   
   // Trust badge

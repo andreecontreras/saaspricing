@@ -22,7 +22,7 @@ const mockProducts = [
     reviews: 4.8,
     shipping: "2-3 days",
     img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
-    tags: ["lowest", "fast", "balanced"],
+    tags: ["lowest", "fast", "balanced", "review"],
   },
   {
     id: 2,
@@ -100,6 +100,9 @@ const displayOptions = [
 ];
 
 const getFilteredProducts = (mode: string) => {
+  // Define high-review products
+  const reviewProducts = mockProducts.filter(p => p.reviews >= 4.5);
+  
   switch(mode) {
     case "lowest":
       return mockProducts.filter(p => p.tags.includes("lowest"));
@@ -108,8 +111,21 @@ const getFilteredProducts = (mode: string) => {
     case "fast":
       return mockProducts.filter(p => p.tags.includes("fast"));
     case "balanced":
-      // For balanced, include both "balanced" tagged products AND review products
-      return mockProducts.filter(p => p.tags.includes("balanced") || p.tags.includes("review"));
+      // For balanced, MUST include both "balanced" tagged products AND review products
+      const balancedProducts = mockProducts.filter(p => p.tags.includes("balanced"));
+      const highReviewProducts = mockProducts.filter(p => p.reviews >= 4.5);
+      
+      // Combine and remove duplicates
+      const combinedProducts = [...balancedProducts];
+      
+      // Add high review products that aren't already in the balanced list
+      highReviewProducts.forEach(product => {
+        if (!combinedProducts.some(p => p.id === product.id)) {
+          combinedProducts.push(product);
+        }
+      });
+      
+      return combinedProducts;
     default:
       return mockProducts;
   }
