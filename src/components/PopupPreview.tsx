@@ -101,7 +101,10 @@ const displayOptions = [
 
 const getFilteredProducts = (mode: string) => {
   // Define high-review products
-  const reviewProducts = mockProducts.filter(p => p.reviews >= 4.5);
+  const highReviewProducts = mockProducts.filter(p => p.reviews >= 4.5);
+  
+  // Define fast shipping products
+  const fastShippingProducts = mockProducts.filter(p => p.tags.includes("fast"));
   
   switch(mode) {
     case "lowest":
@@ -111,15 +114,19 @@ const getFilteredProducts = (mode: string) => {
     case "fast":
       return mockProducts.filter(p => p.tags.includes("fast"));
     case "balanced":
-      // For balanced, MUST include both "balanced" tagged products AND review products
+      // For balanced, MUST include review products AND fast shipping products
+      const combinedProducts = [...highReviewProducts];
+      
+      // Add fast shipping products that aren't already in the list
+      fastShippingProducts.forEach(product => {
+        if (!combinedProducts.some(p => p.id === product.id)) {
+          combinedProducts.push(product);
+        }
+      });
+      
+      // Optionally add balanced tagged products not already included
       const balancedProducts = mockProducts.filter(p => p.tags.includes("balanced"));
-      const highReviewProducts = mockProducts.filter(p => p.reviews >= 4.5);
-      
-      // Combine and remove duplicates
-      const combinedProducts = [...balancedProducts];
-      
-      // Add high review products that aren't already in the balanced list
-      highReviewProducts.forEach(product => {
+      balancedProducts.forEach(product => {
         if (!combinedProducts.some(p => p.id === product.id)) {
           combinedProducts.push(product);
         }

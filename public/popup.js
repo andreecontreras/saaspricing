@@ -214,6 +214,9 @@ function filterProductsByMode(products, mode) {
   // Define products with high reviews
   const highReviewProducts = products.filter(product => product.reviews >= 4.5);
   
+  // Define products with fast shipping (for this demo, we're using products in positions 1 and 2)
+  const fastShippingProducts = products.slice(1, 3);
+  
   switch(mode) {
     case 'price':
       return products.filter(product => product.tag === "Deal!");
@@ -221,11 +224,27 @@ function filterProductsByMode(products, mode) {
       return highReviewProducts;
     case 'shipping':
       // For shipping, we'd show products with fast shipping
-      return products.slice(1, 3); // Just as an example, show middle two products
+      return fastShippingProducts;
     case 'balanced':
-      // For balanced, include BOTH high review products AND other products
-      // This ensures we show best reviews in the balanced view
-      return [...highReviewProducts, ...products.filter(product => !highReviewProducts.includes(product))];
+      // For balanced, include high review products, fast shipping products AND other products
+      // This ensures we show both best reviews and fastest shipping in the balanced view
+      const combinedProducts = [...highReviewProducts];
+      
+      // Add fast shipping products that aren't already in the list
+      fastShippingProducts.forEach(product => {
+        if (!combinedProducts.some(p => p.name === product.name)) {
+          combinedProducts.push(product);
+        }
+      });
+      
+      // Add any other products that might be relevant
+      products.forEach(product => {
+        if (!combinedProducts.some(p => p.name === product.name)) {
+          combinedProducts.push(product);
+        }
+      });
+      
+      return combinedProducts;
     default:
       return products;
   }
