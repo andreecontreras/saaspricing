@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import PopupPreview from "../components/PopupPreview";
@@ -35,7 +36,7 @@ const Index = () => {
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Savvy Shop Whisper</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Scout.io</h1>
             <p className="text-gray-600">Chrome Extension Development Project</p>
           </div>
         </div>
@@ -152,7 +153,7 @@ const Index = () => {
       </div>
       
       <p className="mt-8 text-gray-500 text-sm">
-        Savvy Shop Whisper &copy; {new Date().getFullYear()} | Chrome Extension Version 0.1.0
+        Scout.io &copy; {new Date().getFullYear()} | Chrome Extension Version 0.1.0
       </p>
     </div>
   );
