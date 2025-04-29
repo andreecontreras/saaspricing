@@ -1,3 +1,4 @@
+
 // Add this to your popup.js file
 
 // Save API key button
@@ -253,29 +254,40 @@ function filterProductsByMode(products, mode) {
       // For balanced mode, we need to show a mix of all criteria
       const combinedSet = new Set();
       
-      // Add representative products from each category
+      // Make sure to add at least one product from each category if available
       if (highReviewProducts.length > 0) {
         combinedSet.add(highReviewProducts[0]);
       }
       
+      // Always include fast shipping product for balanced mode
       if (fastShippingProducts.length > 0) {
-        const fastProduct = fastShippingProducts.find(p => !combinedSet.has(p));
-        if (fastProduct) combinedSet.add(fastProduct);
+        // Try to add a fast shipping product that's not already in the set
+        const fastProduct = fastShippingProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        if (fastProduct) {
+          combinedSet.add(fastProduct);
+        } else if (fastShippingProducts.length > 0) {
+          // If all fast shipping products are already in the set, add the first one anyway
+          combinedSet.add(fastShippingProducts[0]);
+        }
       }
       
       if (dealProducts.length > 0) {
-        const dealProduct = dealProducts.find(p => !combinedSet.has(p));
-        if (dealProduct) combinedSet.add(dealProduct);
+        const dealProduct = dealProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        if (dealProduct) {
+          combinedSet.add(dealProduct);
+        }
       }
       
       if (highQualityProducts.length > 0) {
-        const qualityProduct = highQualityProducts.find(p => !combinedSet.has(p));
-        if (qualityProduct) combinedSet.add(qualityProduct);
+        const qualityProduct = highQualityProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        if (qualityProduct) {
+          combinedSet.add(qualityProduct);
+        }
       }
       
       // If we still have room, add other products
       for (const product of products) {
-        if (combinedSet.size < 3 && !Array.from(combinedSet).some(p => p.name === product.name)) {
+        if (combinedSet.size < 3 && !Array.from(combinedSet).some(item => item.name === product.name)) {
           combinedSet.add(product);
         }
       }

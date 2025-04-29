@@ -140,18 +140,20 @@ const getFilteredProducts = (mode: string) => {
       // Create a set to store unique products
       const combinedProducts = new Set<typeof mockProducts[0]>();
       
-      // Ensure we have at least one product from each category if available
-      // Start with a high review product
+      // ALWAYS ensure we include at least one high review product in the balanced view
       if (highReviewProducts.length > 0) {
         combinedProducts.add(highReviewProducts[0]);
       }
       
-      // Add a fast shipping product (not already included)
+      // ALWAYS ensure we include at least one fast shipping product in the balanced view
       const fastProduct = fastShippingProducts.find(p => 
         !Array.from(combinedProducts).some(cp => cp.id === p.id)
       );
       if (fastProduct) {
         combinedProducts.add(fastProduct);
+      } else if (fastShippingProducts.length > 0) {
+        // If we couldn't find a unique fast shipping product, add the first one anyway
+        combinedProducts.add(fastShippingProducts[0]);
       }
       
       // Add a lowest price product (if not already included)
@@ -333,6 +335,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                     ) : null}
                   </div>
                   <div className="flex items-center justify-center text-[11px] gap-1 text-gray-500">
+                    {/* Show the appropriate tag based on product attributes and selected priority */}
                     {selectedPriority === "review" || (selectedPriority === "balanced" && product.reviews >= 4.5) ? (
                       <>
                         <Star size={13} className="text-yellow-400" />
@@ -348,7 +351,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                         <ArrowDown size={13} className="text-savvy-green" />
                         <span>Deal!</span>
                       </>
-                    ) : product.quality === "High" && selectedPriority === "balanced" ? (
+                    ) : product.quality === "High" && (selectedPriority === "balanced") ? (
                       <>
                         <Sparkles size={13} className="text-savvy-purple" />
                         <span>Quality</span>
