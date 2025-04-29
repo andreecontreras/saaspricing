@@ -1,4 +1,3 @@
-
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData } from './apify-integration.js';
 
@@ -34,8 +33,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === 'SAVE_APIFY_API_KEY') {
     saveApifyApiKey(message.apiKey).then(sendResponse);
     return true; // Keep the messaging channel open for async response
+  } else if (message.type === 'BACKGROUND_TOGGLE_OVERLAY') {
+    // Handle the toggle request from popup when content script might not be ready
+    handleToggleOverlay(message.enabled);
+    sendResponse({ success: true });
   }
 });
+
+// Handle toggle overlay request from popup
+function handleToggleOverlay(isEnabled) {
+  console.log('Background script received toggle overlay:', isEnabled);
+  // Store the state in sync storage
+  chrome.storage.sync.set({ 'isEnabled': isEnabled });
+  
+  // Send message to any open tabs
+  chrome.tabs.query({}, function(tabs) {
+    for (let tab of tabs) {
+      chrome.tabs.sendMessage(tab.id, {
+        type: "TOGGLE_OVERLAY", 
+        enabled: isEnabled
+      }).catch(error => {
+        // This is expected for tabs where content script isn't loaded
+        console.log('Could not send toggle to tab:', tab.id);
+      });
+    }
+  });
+}
 
 // Save Apify API key
 async function saveApifyApiKey(apiKey) {

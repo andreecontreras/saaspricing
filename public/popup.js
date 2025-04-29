@@ -1,4 +1,3 @@
-
 // Add this to your popup.js file
 
 // Close popup button
@@ -115,6 +114,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (enableToggle) {
       enableToggle.checked = data.isEnabled !== false;
       console.log('Toggle state loaded:', enableToggle.checked);
+      
+      // Make sure the toggle visually reflects its state
+      const toggleSlider = enableToggle.nextElementSibling;
+      if (toggleSlider) {
+        if (enableToggle.checked) {
+          toggleSlider.classList.add('active');
+        } else {
+          toggleSlider.classList.remove('active');
+        }
+      }
     }
   });
 
@@ -129,20 +138,48 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Toggle state saved:', isEnabled);
       });
       
+      // Visual feedback on the slider
+      const toggleSlider = enableToggle.nextElementSibling;
+      if (toggleSlider) {
+        if (isEnabled) {
+          toggleSlider.classList.add('active');
+        } else {
+          toggleSlider.classList.remove('active');
+        }
+      }
+      
       // Send message to content script to update overlay visibility
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs && tabs[0] && tabs[0].id) {
           chrome.tabs.sendMessage(tabs[0].id, {
             type: "TOGGLE_OVERLAY", 
             enabled: isEnabled
-          }, function(response) {
-            console.log('Message sent to content script:', response);
+          }).catch(error => {
+            console.log('Error sending message to content script:', error);
+            // If content script is not ready, communicate through background script
+            chrome.runtime.sendMessage({
+              type: "BACKGROUND_TOGGLE_OVERLAY",
+              enabled: isEnabled
+            });
           });
         } else {
           console.log('No active tab found');
         }
       });
     });
+    
+    // Also add click handler for the entire toggle container for better UX
+    const toggleContainer = enableToggle.closest('.enable-toggle');
+    if (toggleContainer) {
+      toggleContainer.addEventListener('click', function(e) {
+        // Only toggle if the click wasn't directly on the checkbox
+        if (e.target !== enableToggle) {
+          enableToggle.checked = !enableToggle.checked;
+          // Trigger the change event manually
+          enableToggle.dispatchEvent(new Event('change'));
+        }
+      });
+    }
   }
 
   // Load and display trial information
