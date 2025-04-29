@@ -1,4 +1,3 @@
-
 // Content script for Savvy Shop Whisper Chrome Extension
 
 // Global state
@@ -694,7 +693,6 @@ async function loadUserPreferences() {
       notifyPriceDrops: data.notifyPriceDrops !== undefined ? data.notifyPriceDrops : true
     };
     
-    console.log('User preferences loaded:', userPreferences);
   } catch (error) {
     console.error('Error loading user preferences:', error);
   }
@@ -705,34 +703,26 @@ window.addEventListener('load', initialize);
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Message received in content script:', message);
-  
   if (message.type === 'TOGGLE_OVERLAY') {
-    console.log('Toggle overlay message received. Enabled:', message.enabled);
-    userPreferences.isEnabled = message.enabled;
     handleOverlayVisibility(message.enabled);
     sendResponse({ success: true });
-    return true;
   }
 });
 
 // Handle overlay visibility
 function handleOverlayVisibility(enabled) {
   userPreferences.isEnabled = enabled;
-  console.log('Handling overlay visibility. Enabled:', enabled);
   
   if (overlayContainer) {
-    overlayContainer.style.display = enabled && productData ? 'block' : 'none';
-    console.log('Overlay container display set to:', overlayContainer.style.display);
-  } else {
-    console.log('Overlay container not found');
+    if (enabled) {
+      overlayContainer.style.display = productData ? 'block' : 'none';
+    } else {
+      overlayContainer.style.display = 'none';
+    }
   }
   
   // If enabling and we have product data, show the overlay
   if (enabled && productData) {
-    isOverlayVisible = true;
-    console.log('Showing overlay for product data');
-  } else {
-    isOverlayVisible = false;
+    showOverlay();
   }
 }
