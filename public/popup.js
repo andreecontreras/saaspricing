@@ -1,213 +1,143 @@
-// Popup script for Savvy Shop Whisper Chrome Extension
+// Add this to your popup.js file
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Get references to UI elements
-  const enableToggle = document.getElementById('enable-toggle');
+// Save API key button
+document.getElementById('save-api-key').addEventListener('click', function() {
+  const apiKeyInput = document.getElementById('apify-api-key');
+  const apiKey = apiKeyInput.value.trim();
   
-  // Load saved state
-  try {
-    const data = await chrome.storage.sync.get(['isEnabled']);
-    enableToggle.checked = data.isEnabled !== undefined ? data.isEnabled : true;
-  } catch (error) {
-    console.error('Error loading extension state:', error);
+  if (apiKey) {
+    chrome.runtime.sendMessage({ 
+      type: 'SAVE_APIFY_API_KEY', 
+      apiKey: apiKey 
+    }, function(response) {
+      if (response && response.success) {
+        // Show success message
+        const saveBtn = document.getElementById('save-api-key');
+        const originalText = saveBtn.textContent;
+        
+        saveBtn.textContent = 'Saved!';
+        saveBtn.style.backgroundColor = '#10b981';
+        
+        setTimeout(function() {
+          saveBtn.textContent = originalText;
+          saveBtn.style.backgroundColor = '';
+        }, 2000);
+      } else {
+        // Show error
+        console.error('Failed to save API key:', response ? response.error : 'Unknown error');
+        alert('Failed to save API key. Please try again.');
+      }
+    });
+  } else {
+    alert('Please enter a valid API key');
   }
-  
-  // Set up event listener for enable toggle
-  enableToggle?.addEventListener('change', async () => {
-    const isEnabled = enableToggle.checked;
-    
-    // Save state
-    try {
-      await chrome.storage.sync.set({ isEnabled });
-      
-      // Send message to content script
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            type: 'TOGGLE_OVERLAY',
-            enabled: isEnabled
-          });
-        }
-      });
-      
-      // Visual feedback
-      const savedIndicator = document.createElement('div');
-      savedIndicator.className = 'saved-indicator';
-      savedIndicator.textContent = isEnabled ? 'Extension enabled' : 'Extension disabled';
-      savedIndicator.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: rgba(16, 185, 129, 0.9);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: 1000;
-      `;
-      
-      document.body.appendChild(savedIndicator);
-      
-      // Fade in
-      setTimeout(() => {
-        savedIndicator.style.opacity = '1';
-      }, 10);
-      
-      // Fade out and remove
-      setTimeout(() => {
-        savedIndicator.style.opacity = '0';
-        setTimeout(() => {
-          savedIndicator.remove();
-        }, 300);
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Error saving extension state:', error);
+});
+
+// Load saved API key when popup opens
+document.addEventListener('DOMContentLoaded', function() {
+  // Load existing API key if available
+  chrome.storage.sync.get(['apifyApiKey'], function(data) {
+    if (data.apifyApiKey) {
+      document.getElementById('apify-api-key').value = data.apifyApiKey;
     }
   });
   
-  // Set up events for upgrade buttons
-  document.querySelectorAll('.upgrade-btn').forEach(button => {
-    button.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://savvyshopwhisper.com/upgrade' });
+  // Get references to the toggle and trial banner elements
+  const enableToggle = document.getElementById('enable-toggle');
+  const trialBanner = document.getElementById('trial-banner');
+  const daysRemaining = document.getElementById('days-remaining');
+  const subscriptionBadge = document.getElementById('subscription-badge');
+
+  // Load saved state of the toggle
+  chrome.storage.sync.get('isEnabled', function(data) {
+    enableToggle.checked = data.isEnabled !== false; // Default to true
+  });
+
+  // Add listener to the toggle
+  enableToggle.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'isEnabled': enableToggle.checked });
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {type: "TOGGLE_OVERLAY", enabled: enableToggle.checked});
     });
   });
-  
-  // Load saved user preferences
-  async function loadPreferences() {
-    try {
-      const data = await chrome.storage.sync.get([
-        'isEnabled',
-        'prioritizeBy',
-        'showTrustScores',
-        'showAlternatives',
-        'notifyPriceDrops'
-      ]);
-      
-      // Apply loaded preferences to UI
-      enableToggle.checked = data.isEnabled !== undefined ? data.isEnabled : true;
-      
-      const prioritizeValue = data.prioritizeBy || 'balanced';
-      prioritizePrice.checked = prioritizeValue === 'price';
-      prioritizeReviews.checked = prioritizeValue === 'reviews';
-      prioritizeShipping.checked = prioritizeValue === 'shipping';
-      prioritizeBalanced.checked = prioritizeValue === 'balanced';
-      
-      showTrustScores.checked = data.showTrustScores !== undefined ? data.showTrustScores : true;
-      showAlternatives.checked = data.showAlternatives !== undefined ? data.showAlternatives : true;
-      notifyPriceDrops.checked = data.notifyPriceDrops !== undefined ? data.notifyPriceDrops : true;
-      
-    } catch (error) {
-      console.error('Error loading preferences:', error);
+
+  // Load and display trial information
+  chrome.storage.sync.get(['userSubscription', 'trialEndDate'], function(data) {
+    const now = new Date();
+    const trialEnd = new Date(data.trialEndDate || 0);
+
+    if (data.userSubscription === 'trial' && trialEnd > now) {
+      // Calculate days remaining
+      const timeLeft = trialEnd.getTime() - now.getTime();
+      const days = Math.ceil(timeLeft / (1000 * 3600 * 24));
+      daysRemaining.textContent = days;
+    } else {
+      // Hide the trial banner if not in trial or trial has ended
+      trialBanner.style.display = 'none';
+      subscriptionBadge.textContent = 'Free';
     }
-  }
-  
-  // Save preferences when they change
-  async function savePreferences() {
-    try {
-      // Determine which prioritization option is selected
-      let prioritizeBy = 'balanced';
-      if (prioritizePrice.checked) prioritizeBy = 'price';
-      if (prioritizeReviews.checked) prioritizeBy = 'reviews';
-      if (prioritizeShipping.checked) prioritizeBy = 'shipping';
-      
-      // Save to chrome storage
-      await chrome.storage.sync.set({
-        isEnabled: enableToggle.checked,
-        prioritizeBy: prioritizeBy,
-        showTrustScores: showTrustScores.checked,
-        showAlternatives: showAlternatives.checked,
-        notifyPriceDrops: notifyPriceDrops.checked
-      });
-      
-      // Provide visual feedback that settings are saved
-      showSavedIndicator();
-      
-    } catch (error) {
-      console.error('Error saving preferences:', error);
+  });
+
+  // Load and set the prioritize by option
+  const prioritizePrice = document.getElementById('prioritize-price');
+  const prioritizeReviews = document.getElementById('prioritize-reviews');
+  const prioritizeShipping = document.getElementById('prioritize-shipping');
+  const prioritizeBalanced = document.getElementById('prioritize-balanced');
+
+  chrome.storage.sync.get('prioritizeBy', function(data) {
+    switch (data.prioritizeBy) {
+      case 'price':
+        prioritizePrice.checked = true;
+        break;
+      case 'reviews':
+        prioritizeReviews.checked = true;
+        break;
+      case 'shipping':
+        prioritizeShipping.checked = true;
+        break;
+      default:
+        prioritizeBalanced.checked = true;
     }
-  }
-  
-  // Load subscription status
-  async function loadSubscriptionStatus() {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'GET_SUBSCRIPTION_STATUS'
-      });
-      
-      if (response.status === 'trial') {
-        // Update trial banner
-        daysRemaining.textContent = response.daysRemaining;
-        trialBanner.style.display = 'flex';
-        subscriptionBadge.textContent = 'Free Trial';
-        subscriptionBadge.style.backgroundColor = '#8B5CF6'; // Purple
-      } else if (response.status === 'premium') {
-        // Hide trial banner, show premium badge
-        trialBanner.style.display = 'none';
-        subscriptionBadge.textContent = 'Premium';
-        subscriptionBadge.style.backgroundColor = '#10B981'; // Green
-      } else {
-        // Free tier
-        trialBanner.innerHTML = `
-          <div>
-            <h3>Upgrade to Premium</h3>
-            <p>Unlock all premium features</p>
-          </div>
-          <button class="upgrade-btn">Upgrade</button>
-        `;
-        trialBanner.style.display = 'flex';
-        subscriptionBadge.textContent = 'Free';
-        subscriptionBadge.style.backgroundColor = '#6B7280'; // Gray
-      }
-      
-    } catch (error) {
-      console.error('Error loading subscription status:', error);
-    }
-  }
-  
-  // Show a saved indicator briefly
-  function showSavedIndicator() {
-    const savedIndicator = document.createElement('div');
-    savedIndicator.className = 'saved-indicator';
-    savedIndicator.textContent = 'Settings saved';
-    savedIndicator.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(16, 185, 129, 0.9);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 500;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 1000;
-    `;
-    
-    document.body.appendChild(savedIndicator);
-    
-    // Fade in
-    setTimeout(() => {
-      savedIndicator.style.opacity = '1';
-    }, 10);
-    
-    // Fade out and remove
-    setTimeout(() => {
-      savedIndicator.style.opacity = '0';
-      setTimeout(() => {
-        savedIndicator.remove();
-      }, 300);
-    }, 2000);
-  }
-  
-  // Settings button functionality
-  settingsBtn.addEventListener('click', () => {
-    chrome.runtime.openOptionsPage();
+  });
+
+  // Add listeners to the prioritize by options
+  prioritizePrice.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'prioritizeBy': 'price' });
+  });
+
+  prioritizeReviews.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'prioritizeBy': 'reviews' });
+  });
+
+  prioritizeShipping.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'prioritizeBy': 'shipping' });
+  });
+
+  prioritizeBalanced.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'prioritizeBy': 'balanced' });
+  });
+
+  // Load and set the display options
+  const showTrustScores = document.getElementById('show-trust-scores');
+  const showAlternatives = document.getElementById('show-alternatives');
+  const notifyPriceDrops = document.getElementById('notify-price-drops');
+
+  chrome.storage.sync.get(['showTrustScores', 'showAlternatives', 'notifyPriceDrops'], function(data) {
+    showTrustScores.checked = data.showTrustScores !== false; // Default to true
+    showAlternatives.checked = data.showAlternatives !== false; // Default to true
+    notifyPriceDrops.checked = data.notifyPriceDrops === true; // Default to false
+  });
+
+  // Add listeners to the display options
+  showTrustScores.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'showTrustScores': showTrustScores.checked });
+  });
+
+  showAlternatives.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'showAlternatives': showAlternatives.checked });
+  });
+
+  notifyPriceDrops.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'notifyPriceDrops': notifyPriceDrops.checked });
   });
 });
