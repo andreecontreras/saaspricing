@@ -1,6 +1,6 @@
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Star,
   ArrowUp,
@@ -89,7 +89,7 @@ const prioritizeOptions = [
     label: "Balanced",
     icon: <Equal className="text-savvy-purple" size={18} />,
     value: "balanced",
-    desc: "A smart mix of price, speed, and quality.",
+    desc: "A smart mix of price, speed, quality, and reviews.",
   },
 ];
 
@@ -100,10 +100,19 @@ const displayOptions = [
 ];
 
 const getFilteredProducts = (mode: string) => {
-  if (mode === "balanced") {
-    return mockProducts;
+  switch(mode) {
+    case "lowest":
+      return mockProducts.filter(p => p.tags.includes("lowest"));
+    case "review":
+      return mockProducts.filter(p => p.tags.includes("review"));
+    case "fast":
+      return mockProducts.filter(p => p.tags.includes("fast"));
+    case "balanced":
+      // For balanced, include both "balanced" tagged products AND review products
+      return mockProducts.filter(p => p.tags.includes("balanced") || p.tags.includes("review"));
+    default:
+      return mockProducts;
   }
-  return mockProducts.filter((p) => p.tags.includes(mode));
 };
 
 const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => void }> = ({
@@ -114,6 +123,12 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
   const [showTrustScores, setShowTrustScores] = useState(true);
   const [showAlternatives, setShowAlternatives] = useState(true);
   const [notifyPriceDrops, setNotifyPriceDrops] = useState(false);
+  const [filteredProducts, setFilteredProducts] = useState(getFilteredProducts("balanced"));
+  
+  // Update filtered products when priority changes
+  useEffect(() => {
+    setFilteredProducts(getFilteredProducts(selectedPriority));
+  }, [selectedPriority]);
 
   const handleNotifyPriceDrops = () => {
     setNotifyPriceDrops(prev => !prev);
@@ -124,8 +139,6 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
       });
     }
   };
-
-  const filteredProducts = getFilteredProducts(selectedPriority);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -334,7 +347,18 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
             </h2>
             <div className="flex flex-col gap-3">
               <div className="bg-white border border-gray-100 rounded-lg px-4 py-3 shadow">
-                <div className="text-xs text-gray-500">See more alternatives coming soon!</div>
+                <p className="text-xs text-gray-600 mb-2">A smart mix of price, speed, and quality.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {filteredProducts.slice(0, 3).map((product) => (
+                    <div key={`alt-${product.id}`} className="bg-gray-50 rounded-md p-2 text-center">
+                      <div className="w-full h-10 mb-1 overflow-hidden rounded">
+                        <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="text-[10px] font-medium text-gray-700 truncate">{product.name}</div>
+                      <div className="text-[11px] font-bold text-savvy-purple">${product.price}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

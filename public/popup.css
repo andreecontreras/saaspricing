@@ -166,3 +166,30 @@
   border-radius: 4px;
   font-weight: 600;
 }
+
+/* Style for active prioritization option */
+.option {
+  position: relative;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.option.active-option {
+  background-color: #6366f1;
+  color: white;
+  box-shadow: 0 2px 4px rgba(99,102,241,0.3);
+}
+
+.option.active-option span {
+  color: white;
+}
+
+/* Animation for option selection */
+@keyframes optionSelected {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.option.active-option {
+  animation: optionSelected 0.3s ease;
+}

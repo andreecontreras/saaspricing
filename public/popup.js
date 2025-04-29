@@ -110,37 +110,60 @@ document.addEventListener('DOMContentLoaded', function() {
   const prioritizeShipping = document.getElementById('prioritize-shipping');
   const prioritizeBalanced = document.getElementById('prioritize-balanced');
 
-  chrome.storage.sync.get('prioritizeBy', function(data) {
-    switch (data.prioritizeBy) {
+  // Function to update active class and handle prioritization
+  function updatePrioritization(mode) {
+    // Remove active class from all options
+    [prioritizePrice, prioritizeReviews, prioritizeShipping, prioritizeBalanced].forEach(option => {
+      if (option && option.parentElement) {
+        option.parentElement.classList.remove('active-option');
+      }
+    });
+    
+    // Add active class to the selected option
+    let selectedOption;
+    switch(mode) {
       case 'price':
-        prioritizePrice.checked = true;
+        selectedOption = prioritizePrice;
         break;
       case 'reviews':
-        prioritizeReviews.checked = true;
+        selectedOption = prioritizeReviews;
         break;
       case 'shipping':
-        prioritizeShipping.checked = true;
+        selectedOption = prioritizeShipping;
         break;
       default:
-        prioritizeBalanced.checked = true;
+        selectedOption = prioritizeBalanced;
     }
+    
+    if (selectedOption && selectedOption.parentElement) {
+      selectedOption.parentElement.classList.add('active-option');
+    }
+    
+    // Update storage and refresh any visible alternative products
+    chrome.storage.sync.set({ 'prioritizeBy': mode });
+    refreshAlternativeProducts(mode);
+  }
+
+  chrome.storage.sync.get('prioritizeBy', function(data) {
+    const mode = data.prioritizeBy || 'balanced';
+    updatePrioritization(mode);
   });
 
   // Add listeners to the prioritize by options
   prioritizePrice.addEventListener('change', function() {
-    chrome.storage.sync.set({ 'prioritizeBy': 'price' });
+    updatePrioritization('price');
   });
 
   prioritizeReviews.addEventListener('change', function() {
-    chrome.storage.sync.set({ 'prioritizeBy': 'reviews' });
+    updatePrioritization('reviews');
   });
 
   prioritizeShipping.addEventListener('change', function() {
-    chrome.storage.sync.set({ 'prioritizeBy': 'shipping' });
+    updatePrioritization('shipping');
   });
 
   prioritizeBalanced.addEventListener('change', function() {
-    chrome.storage.sync.set({ 'prioritizeBy': 'balanced' });
+    updatePrioritization('balanced');
   });
 
   // Load and set the display options
@@ -183,6 +206,43 @@ function updateAlternativesSection(show) {
   }
 }
 
+// Function to filter products based on prioritization mode
+function filterProductsByMode(products, mode) {
+  switch(mode) {
+    case 'price':
+      return products.filter(product => product.tag === "Deal!");
+    case 'reviews':
+      // For reviews, we'd show products with good reviews
+      return products.slice(0, 2); // Just as an example, show first two products
+    case 'shipping':
+      // For shipping, we'd show products with fast shipping
+      return products.slice(1, 3); // Just as an example, show middle two products
+    case 'balanced':
+      // For balanced, show a mix including best reviews
+      return products; // Show all products for balanced view
+    default:
+      return products;
+  }
+}
+
+// Function to refresh alternative products based on prioritization mode
+function refreshAlternativeProducts(mode) {
+  const productsContainer = document.querySelector('.alternative-products-container');
+  if (!productsContainer) return;
+  
+  // Clear current products
+  productsContainer.innerHTML = '';
+  
+  // Filter products based on mode
+  const filteredProducts = filterProductsByMode(alternativeProducts, mode);
+  
+  // Add filtered products
+  filteredProducts.forEach(product => {
+    const productCard = createProductCard(product);
+    productsContainer.appendChild(productCard);
+  });
+}
+
 // Function to initialize the Alternative Products section
 function initAlternativeProducts() {
   // Check if the section already exists, if not, create it
@@ -207,10 +267,16 @@ function initAlternativeProducts() {
     const productsContainer = document.createElement('div');
     productsContainer.className = 'alternative-products-container';
     
-    // Add alternative products
-    alternativeProducts.forEach(product => {
-      const productCard = createProductCard(product);
-      productsContainer.appendChild(productCard);
+    // Get current prioritization mode
+    chrome.storage.sync.get('prioritizeBy', function(data) {
+      const mode = data.prioritizeBy || 'balanced';
+      
+      // Add alternative products based on mode
+      const filteredProducts = filterProductsByMode(alternativeProducts, mode);
+      filteredProducts.forEach(product => {
+        const productCard = createProductCard(product);
+        productsContainer.appendChild(productCard);
+      });
     });
     
     alternativesSection.appendChild(productsContainer);
@@ -390,6 +456,16 @@ function addAlternativeProductsStyles() {
       padding: 2px 6px;
       border-radius: 4px;
       font-weight: 600;
+    }
+    
+    /* Style for active prioritize option */
+    .active-option {
+      background-color: #6366f1;
+      color: white;
+    }
+    
+    .option.active-option span {
+      color: white;
     }
   `;
   document.head.appendChild(style);
