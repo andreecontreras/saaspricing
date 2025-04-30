@@ -1,3 +1,4 @@
+
 // Content script for Savvy Shop Whisper Chrome Extension
 
 // Global state
@@ -59,6 +60,13 @@ async function initialize() {
       titleSelector: '#itemTitle, .x-item-title',
       imageSelector: '#icImg, .ux-image-carousel-item',
       reviewSelector: '.reviews, .ux-seller-section__item--seller'
+    },
+    'aliexpress.com': {
+      productContainer: '.product-info, .pdp-info',
+      priceSelector: '.product-price-value, .uniform-banner-box-price',
+      titleSelector: '.product-title-text, .pdp-title h1',
+      imageSelector: '.images-view-item img, .pdp-img img',
+      reviewSelector: '.overview-rating-average, .rating-scores'
     }
   };
   
@@ -128,8 +136,104 @@ function initializeProductPage(productContainer) {
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'PRODUCT_DATA_READY') {
       updateOverlayWithData(message.data);
+    } else if (message.type === 'SCRAPING_STATUS') {
+      updateScrapingStatus(message);
+    } else if (message.type === 'PRODUCT_ANALYSIS_STATUS') {
+      updateAnalysisStatus(message);
     }
   });
+}
+
+// Update the UI with scraping status
+function updateScrapingStatus(message) {
+  const statusElement = document.getElementById('savvy-scraping-status');
+  if (!statusElement) return;
+  
+  if (message.status === 'started') {
+    statusElement.innerHTML = `
+      <div class="inline-flex items-center text-gray-500">
+        <span class="w-4 h-4 border-2 border-t-savvy-purple border-blue-500 border-opacity-30 rounded-full animate-spin mr-2"></span>
+        <span>${message.message || 'Scraping...'}</span>
+      </div>
+    `;
+  } else if (message.status === 'success') {
+    statusElement.innerHTML = `
+      <div class="inline-flex items-center text-savvy-green">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>${message.message || 'Scraping completed'}</span>
+      </div>
+    `;
+    
+    // If we have scraped data, update the display
+    if (message.data) {
+      const productInfoElement = document.getElementById('savvy-scraped-product-info');
+      if (productInfoElement) {
+        productInfoElement.innerHTML = `
+          <div class="p-4 border border-gray-200 rounded-lg bg-white shadow-sm mt-3">
+            <h3 class="font-medium">${message.data.title || 'Product'}</h3>
+            <div class="text-lg font-bold text-savvy-purple mt-1">${message.data.price ? `$${message.data.price}` : 'Price not found'}</div>
+            <div class="text-xs text-gray-500 mt-1">${new URL(message.data.url).hostname}</div>
+          </div>
+        `;
+      }
+    }
+  } else if (message.status === 'error') {
+    statusElement.innerHTML = `
+      <div class="inline-flex items-center text-savvy-red">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <span>${message.message || 'Error during scraping'}</span>
+      </div>
+    `;
+  }
+}
+
+// Update the UI with analysis status
+function updateAnalysisStatus(message) {
+  const statusElement = document.getElementById('savvy-analysis-status');
+  if (!statusElement) return;
+  
+  if (message.status === 'started') {
+    statusElement.innerHTML = `
+      <div class="inline-flex items-center text-gray-500">
+        <span class="w-4 h-4 border-2 border-t-savvy-purple border-blue-500 border-opacity-30 rounded-full animate-spin mr-2"></span>
+        <span>${message.message || 'Analyzing...'}</span>
+      </div>
+    `;
+    document.getElementById('savvy-loading').classList.remove('hidden');
+  } else if (message.status === 'completed') {
+    statusElement.innerHTML = `
+      <div class="inline-flex items-center text-savvy-green">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>${message.message || 'Analysis completed'}</span>
+      </div>
+    `;
+  } else if (message.status === 'error') {
+    statusElement.innerHTML = `
+      <div class="inline-flex items-center text-savvy-red">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        <span>${message.message || 'Error during analysis'}</span>
+      </div>
+    `;
+    // Still show the regular info if there's an error, but with a visual indication
+    document.getElementById('savvy-loading').classList.add('hidden');
+    document.getElementById('savvy-product-info').classList.remove('hidden');
+    document.getElementById('savvy-tabs').classList.remove('hidden');
+    document.getElementById('savvy-tab-content').classList.remove('hidden');
+  }
 }
 
 // Extract product data from the page
@@ -145,13 +249,13 @@ function extractProductData() {
     
     // Clean up price text to extract numeric value
     const priceText = priceElement.textContent.trim();
-    const priceMatch = priceText.match(/[\d,]+\.\d{2}/);
+    const priceMatch = priceText.match(/[\d,]+\.\d{2}/) || priceText.match(/[\d,]+/);
     const price = priceMatch ? parseFloat(priceMatch[0].replace(',', '')) : null;
     
     return {
       title: titleElement.textContent.trim(),
       price: price,
-      image: imageElement ? imageElement.src : null,
+      image: imageElement ? (imageElement.src || imageElement.getAttribute('src')) : null,
       url: window.location.href
     };
   } catch (error) {
@@ -222,6 +326,9 @@ function createOverlay() {
         
         <div class="p-4 max-h-[80vh] overflow-y-auto">
           <div class="flex flex-col space-y-6">
+            <!-- Status bar -->
+            <div id="savvy-analysis-status" class="text-sm"></div>
+            
             <!-- Loading state -->
             <div id="savvy-loading" class="py-12 flex flex-col items-center justify-center">
               <div class="w-16 h-16 border-4 border-savvy-purple/30 border-t-savvy-purple rounded-full animate-spin"></div>
@@ -245,6 +352,9 @@ function createOverlay() {
                 <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="alternatives">
                   Similar Products
                 </button>
+                <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="scraper">
+                  Web Scraper
+                </button>
               </div>
             </div>
             
@@ -261,19 +371,46 @@ function createOverlay() {
               <div id="savvy-alternatives-tab" class="savvy-tab-panel hidden">
                 <!-- Content will be populated dynamically -->
               </div>
+              
+              <div id="savvy-scraper-tab" class="savvy-tab-panel hidden">
+                <div class="space-y-4">
+                  <h3 class="font-semibold">Web Scraper</h3>
+                  <p class="text-sm text-gray-500">Scrape product data from this page or any other URL.</p>
+                  
+                  <div class="flex items-center space-x-2">
+                    <button id="savvy-scrape-current" class="px-4 py-2 bg-savvy-purple text-white rounded-md text-sm font-medium hover:bg-savvy-purple-dark transition-colors">
+                      Scrape Current Page
+                    </button>
+                    <div class="relative flex-grow">
+                      <input id="savvy-url-input" type="text" placeholder="Enter product URL to scrape" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                    </div>
+                    <button id="savvy-scrape-url" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">
+                      Scrape URL
+                    </button>
+                  </div>
+                  
+                  <div id="savvy-scraping-status" class="text-sm min-h-[24px]"></div>
+                  
+                  <div id="savvy-scraped-product-info"></div>
+                  
+                  <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg mt-6">
+                    <h4 class="font-medium text-sm">Supported Sites</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Amazon</div>
+                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Walmart</div>
+                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Target</div>
+                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Best Buy</div>
+                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">eBay</div>
+                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">AliExpress</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <!-- Trial/Premium banner -->
             <div id="savvy-subscription-banner" class="mt-4 p-4 bg-gradient-to-r from-savvy-purple to-savvy-blue rounded-lg text-white hidden">
-              <div class="flex justify-between items-center">
-                <div>
-                  <h4 class="font-semibold">Your free trial ends in <span id="savvy-trial-days">7</span> days</h4>
-                  <p class="text-sm opacity-90">Upgrade to Premium for unlimited deal alerts and more.</p>
-                </div>
-                <button class="bg-white text-savvy-purple px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-shadow">
-                  Upgrade Now
-                </button>
-              </div>
+              <!-- Content will be populated dynamically -->
             </div>
           </div>
         </div>
@@ -294,6 +431,68 @@ function createOverlay() {
       const tabName = this.getAttribute('data-tab');
       switchTab(tabName);
     });
+  });
+  
+  // Add scrape buttons functionality
+  document.getElementById('savvy-scrape-current').addEventListener('click', function() {
+    scrapeCurrentPage();
+  });
+  
+  document.getElementById('savvy-scrape-url').addEventListener('click', function() {
+    const urlInput = document.getElementById('savvy-url-input');
+    const url = urlInput.value.trim();
+    if (url) {
+      scrapeUrl(url);
+    } else {
+      document.getElementById('savvy-scraping-status').innerHTML = `
+        <div class="inline-flex items-center text-savvy-red">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Please enter a valid URL</span>
+        </div>
+      `;
+    }
+  });
+}
+
+// Function to scrape the current page
+function scrapeCurrentPage() {
+  const statusEl = document.getElementById('savvy-scraping-status');
+  statusEl.innerHTML = `
+    <div class="inline-flex items-center text-gray-500">
+      <span class="w-4 h-4 border-2 border-t-savvy-purple border-opacity-30 rounded-full animate-spin mr-2"></span>
+      <span>Scraping current page...</span>
+    </div>
+  `;
+  
+  chrome.runtime.sendMessage({
+    type: 'SCRAPE_PRODUCT_URL',
+    url: window.location.href
+  }, function(response) {
+    console.log('Scrape response:', response);
+    // The status updates will come through the message listener
+  });
+}
+
+// Function to scrape a specific URL
+function scrapeUrl(url) {
+  const statusEl = document.getElementById('savvy-scraping-status');
+  statusEl.innerHTML = `
+    <div class="inline-flex items-center text-gray-500">
+      <span class="w-4 h-4 border-2 border-t-savvy-purple border-opacity-30 rounded-full animate-spin mr-2"></span>
+      <span>Scraping ${url}...</span>
+    </div>
+  `;
+  
+  chrome.runtime.sendMessage({
+    type: 'SCRAPE_PRODUCT_URL',
+    url: url
+  }, function(response) {
+    console.log('Scrape response:', response);
+    // The status updates will come through the message listener
   });
 }
 

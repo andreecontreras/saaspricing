@@ -193,3 +193,81 @@
 .option.active-option {
   animation: optionSelected 0.3s ease;
 }
+
+/* New styles for web scraper integration */
+.api-status {
+  font-size: 12px;
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+.api-status.connected {
+  color: #10b981;
+}
+
+.api-status.not-connected {
+  color: #f43f5e;
+}
+
+.scraper-options {
+  margin-top: 15px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 15px;
+}
+
+.scraper-options h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.store-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.store-name {
+  font-weight: 500;
+}
+
+.store-status {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.store-status.active {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.store-status.inactive {
+  background-color: rgba(244, 63, 94, 0.1);
+  color: #f43f5e;
+}
+
+/* Add loading indicator styles */
+.loading-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  border-radius: 50%;
+  border-top-color: #6366f1;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -81,15 +81,46 @@
         </div>
       </div>
 
+      <div id="alternative-products-section" class="section">
+        <!-- This section will be populated by JavaScript -->
+      </div>
+
       <div class="section">
-        <h2>API Integration</h2>
+        <h2>Web Scraper Integration</h2>
         <div class="api-key-input">
           <label for="apify-api-key">Apify API Key</label>
           <div class="api-key-field">
             <input type="password" id="apify-api-key" placeholder="Enter your Apify API key">
             <button id="save-api-key" class="save-btn">Save</button>
           </div>
+          <div id="api-status" class="api-status">Not connected</div>
           <p class="api-hint">Get your API key from <a href="https://apify.com/sign-up" target="_blank">apify.com</a></p>
+          
+          <div class="scraper-options">
+            <h3>Supported Stores</h3>
+            <div class="store-grid">
+              <div class="store-item">
+                <span class="store-name">Walmart</span>
+                <span class="store-status active">Active</span>
+              </div>
+              <div class="store-item">
+                <span class="store-name">Target</span>
+                <span class="store-status active">Active</span>
+              </div>
+              <div class="store-item">
+                <span class="store-name">Best Buy</span>
+                <span class="store-status active">Active</span>
+              </div>
+              <div class="store-item">
+                <span class="store-name">AliExpress</span>
+                <span class="store-status active">Active</span>
+              </div>
+              <div class="store-item">
+                <span class="store-name">Amazon</span>
+                <span class="store-status active">Active</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

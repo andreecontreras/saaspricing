@@ -1,6 +1,6 @@
 
 // Background service worker for Scout.io Chrome Extension
-import { initApifyIntegration, searchProductPrices, processScrapedData } from './apify-integration.js';
+import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL } from './apify-integration.js';
 
 // Listen for installation event
 chrome.runtime.onInstalled.addListener(async () => {
@@ -28,11 +28,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PRODUCT_DETECTED') {
     handleProductDetection(message.data, sender.tab.id);
     sendResponse({ success: true });
+    return true; // Keep the messaging channel open for async response
   } else if (message.type === 'GET_SUBSCRIPTION_STATUS') {
     getSubscriptionStatus().then(sendResponse);
     return true; // Keep the messaging channel open for async response
   } else if (message.type === 'SAVE_APIFY_API_KEY') {
     saveApifyApiKey(message.apiKey).then(sendResponse);
+    return true; // Keep the messaging channel open for async response
+  } else if (message.type === 'SCRAPE_PRODUCT_URL') {
+    scrapeProductURL(message.url, sender.tab.id)
+      .then(result => sendResponse({ success: true, data: result }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep the messaging channel open for async response
   }
 });
@@ -49,9 +55,52 @@ async function saveApifyApiKey(apiKey) {
   }
 }
 
+// Scrape a specific product URL
+async function scrapeProductURL(url, tabId) {
+  try {
+    // Notify content script that scraping has started
+    chrome.tabs.sendMessage(tabId, {
+      type: 'SCRAPING_STATUS',
+      status: 'started',
+      message: 'Starting to scrape product data...'
+    });
+    
+    // Scrape the URL
+    const productData = await quickScrapeProductURL(url);
+    
+    // Notify content script with results
+    chrome.tabs.sendMessage(tabId, {
+      type: 'SCRAPING_STATUS',
+      status: productData ? 'success' : 'error',
+      message: productData ? 'Successfully scraped product data' : 'Failed to scrape product data',
+      data: productData
+    });
+    
+    return productData;
+  } catch (error) {
+    console.error('Error scraping product URL:', error);
+    
+    // Notify content script of error
+    chrome.tabs.sendMessage(tabId, {
+      type: 'SCRAPING_STATUS',
+      status: 'error',
+      message: `Error: ${error.message}`
+    });
+    
+    throw error;
+  }
+}
+
 // Handle product detection
 async function handleProductDetection(productData, tabId) {
   try {
+    // Notify content script that product analysis has started
+    chrome.tabs.sendMessage(tabId, {
+      type: 'PRODUCT_ANALYSIS_STATUS',
+      status: 'started',
+      message: 'Analyzing product across multiple stores...'
+    });
+    
     // Use Apify to search for product prices
     const scrapedData = await searchProductPrices(productData);
     let processedData = null;
@@ -62,14 +111,16 @@ async function handleProductDetection(productData, tabId) {
     
     // If we got real data from Apify, use it; otherwise, use mock data
     const mockResult = generateMockProductData(productData);
+    let finalResult = {...mockResult};
     
     // Replace mock price data with real data if available
-    if (processedData) {
-      mockResult.priceData.lowestPrice = processedData.lowestPrice;
+    if (processedData && processedData.lowestPrice) {
+      finalResult.priceData.lowestPrice = processedData.lowestPrice;
+      finalResult.priceData.allPrices = processedData.allPrices || [processedData.lowestPrice];
       
       // Update price history to show some realistic variation
       const lowestPrice = processedData.lowestPrice.price;
-      mockResult.priceData.priceHistory = [
+      finalResult.priceData.priceHistory = [
         { date: "Jan", price: lowestPrice * 1.1 },
         { date: "Feb", price: lowestPrice * 1.05 },
         { date: "Mar", price: lowestPrice * 1.15 },
@@ -79,14 +130,28 @@ async function handleProductDetection(productData, tabId) {
       ];
     }
     
+    // Notify content script of completion status
+    chrome.tabs.sendMessage(tabId, {
+      type: 'PRODUCT_ANALYSIS_STATUS',
+      status: 'completed',
+      message: processedData ? 'Found price data from multiple stores' : 'Using estimated price data'
+    });
+    
     // Send the processed data back to the content script
     chrome.tabs.sendMessage(tabId, {
       type: 'PRODUCT_DATA_READY',
-      data: mockResult
+      data: finalResult
     });
     
   } catch (error) {
     console.error('Error handling product detection:', error);
+    
+    // Notify content script of error
+    chrome.tabs.sendMessage(tabId, {
+      type: 'PRODUCT_ANALYSIS_STATUS',
+      status: 'error',
+      message: `Error: ${error.message}`
+    });
   }
 }
 
