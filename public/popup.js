@@ -1,4 +1,3 @@
-
 // Add this to your popup.js file
 
 // Save API key button
@@ -82,6 +81,12 @@ const alternativeProducts = [
 
 // Load saved API key when popup opens
 document.addEventListener('DOMContentLoaded', function() {
+  // Set the default API key value
+  document.getElementById('apify-api-key').value = 'apify_api_y9gocF4ETXbAde3CoqrbjiDOYpztOQ4zcywQ';
+  
+  // Automatically trigger the save button
+  document.getElementById('save-api-key').click();
+  
   // Load existing API key if available
   chrome.storage.sync.get(['apifyApiKey'], function(data) {
     if (data.apifyApiKey) {
@@ -189,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   prioritizeReviews.addEventListener('change', function() {
-    updatePrioritization('reviews');
+    updatePriorititization('reviews');
   });
 
   prioritizeShipping.addEventListener('change', function() {
