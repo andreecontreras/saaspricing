@@ -4,6 +4,7 @@ import { initializeApiKey } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
 import { initializeDisplayOptions } from './js/display-options.js';
 import { initializeAlternativeProducts } from './js/alternative-products.js';
+import { initSentimentAnalysis } from './js/huggingface-integration.js';
 
 // Initialize all features when popup is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -21,7 +22,30 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize alternative products
   initializeAlternativeProducts();
+  
+  // Initialize Hugging Face integration
+  initializeHuggingFace();
 });
+
+// Function to initialize Hugging Face integration
+function initializeHuggingFace() {
+  const hfStatus = document.getElementById('hf-status');
+  if (hfStatus) {
+    hfStatus.textContent = 'Loading...';
+    
+    // Try to initialize the sentiment model
+    initSentimentAnalysis()
+      .then(() => {
+        hfStatus.textContent = 'Ready';
+        hfStatus.classList.add('connected');
+      })
+      .catch(error => {
+        console.error('Error initializing Hugging Face model:', error);
+        hfStatus.textContent = 'Error';
+        hfStatus.classList.add('not-connected');
+      });
+  }
+}
 
 // Function to initialize the toggle and trial banner
 function initializeToggleAndTrial() {

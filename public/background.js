@@ -1,6 +1,7 @@
 
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL } from './apify-integration.js';
+import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration.js';
 
 // Listen for installation event
 chrome.runtime.onInstalled.addListener(async () => {
@@ -40,8 +41,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(result => sendResponse({ success: true, data: result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep the messaging channel open for async response
+  } else if (message.type === 'ANALYZE_REVIEWS') {
+    analyzeProductReviews(message.reviews)
+      .then(result => sendResponse({ success: true, data: result }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true; // Keep the messaging channel open for async response
   }
 });
+
+// Analyze product reviews using Hugging Face
+async function analyzeProductReviews(reviews) {
+  try {
+    console.log('Analyzing product reviews with Hugging Face...');
+    
+    // Analyze sentiment
+    const sentimentAnalysis = await analyzeReviews(reviews);
+    
+    // Extract key pros and cons
+    const keyInsights = await extractKeyInsights(reviews);
+    
+    return {
+      sentimentAnalysis,
+      keyInsights
+    };
+  } catch (error) {
+    console.error('Error analyzing product reviews:', error);
+    throw error;
+  }
+}
 
 // Save Apify API key
 async function saveApifyApiKey(apiKey) {
@@ -130,11 +157,42 @@ async function handleProductDetection(productData, tabId) {
       ];
     }
     
+    // If we have product reviews, analyze them with Hugging Face
+    if (productData.reviews && productData.reviews.length > 0) {
+      try {
+        chrome.tabs.sendMessage(tabId, {
+          type: 'PRODUCT_ANALYSIS_STATUS',
+          status: 'progress',
+          message: 'Analyzing product reviews with AI...'
+        });
+        
+        const reviewAnalysis = await analyzeProductReviews(productData.reviews);
+        
+        // Update sentiment summary
+        if (reviewAnalysis.sentimentAnalysis) {
+          finalResult.reviewData.sentimentSummary = {
+            positive: reviewAnalysis.sentimentAnalysis.positivePct,
+            neutral: reviewAnalysis.sentimentAnalysis.neutralPct,
+            negative: reviewAnalysis.sentimentAnalysis.negativePct
+          };
+        }
+        
+        // Update pros and cons
+        if (reviewAnalysis.keyInsights) {
+          finalResult.reviewData.topPros = reviewAnalysis.keyInsights.topPros;
+          finalResult.reviewData.topCons = reviewAnalysis.keyInsights.topCons;
+        }
+      } catch (error) {
+        console.error('Error in AI review analysis:', error);
+        // Continue with mock data for reviews if AI analysis fails
+      }
+    }
+    
     // Notify content script of completion status
     chrome.tabs.sendMessage(tabId, {
       type: 'PRODUCT_ANALYSIS_STATUS',
       status: 'completed',
-      message: processedData ? 'Found price data from multiple stores' : 'Using estimated price data'
+      message: processedData ? 'Found price data and analyzed reviews' : 'Using estimated data'
     });
     
     // Send the processed data back to the content script

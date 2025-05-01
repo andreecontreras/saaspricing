@@ -271,3 +271,42 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* New styles for AI integration section */
+.ai-integration {
+  background: #f8f9fc;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.integration-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.model-status {
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.model-status.connected {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.model-status.not-connected {
+  background: rgba(244, 63, 94, 0.1);
+  color: #f43f5e;
+}
+
+.ai-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 8px;
+}
