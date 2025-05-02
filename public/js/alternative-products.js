@@ -1,4 +1,3 @@
-
 // Alternative products functionality
 
 // Define alternative products data
@@ -93,6 +92,12 @@ export function initializeAlternativeProducts() {
           const mode = data.prioritizeBy || 'balanced';
           refreshAlternativeProducts(mode);
         });
+      } else {
+        // Make sure we show the "no products" message
+        const productsContainer = document.getElementById('alternative-products-container');
+        if (productsContainer) {
+          showNoProductsMessage(productsContainer);
+        }
       }
     });
     

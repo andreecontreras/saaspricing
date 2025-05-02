@@ -1,4 +1,3 @@
-
 // Main popup.js file - imports and coordinates all functionality
 import { initializeApiKey } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
@@ -27,9 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeHuggingFace();
   
   // Check for active product - this will update the UI if a product is being browsed
+  console.log("Checking for active product on DOM content load...");
   checkForActiveProduct();
-  
-  console.log("Popup initialized, checking for active product...");
 });
 
 // Function to check if there's an active product and update the UI accordingly
@@ -48,7 +46,34 @@ function checkForActiveProduct() {
         });
       });
     } else {
-      console.log("No active product found");
+      console.log("No active product found, showing initial message");
+      // No product found, make sure we're showing the no products message
+      import('./js/alternative-products.js').then(module => {
+        const productsContainer = document.getElementById('alternative-products-container');
+        if (productsContainer) {
+          // This function is defined in alternative-products.js
+          const showNoProductsMessage = function(container) {
+            // Clear the container first
+            container.innerHTML = '';
+            
+            // Add the no products message
+            const initialMessage = document.createElement('div');
+            initialMessage.className = 'no-products-message';
+            initialMessage.innerHTML = `
+              <div class="text-center py-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
+              </div>
+            `;
+            container.appendChild(initialMessage);
+          };
+          
+          showNoProductsMessage(productsContainer);
+        }
+      });
     }
   });
 }
