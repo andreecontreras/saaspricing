@@ -26,7 +26,7 @@ const alternativeProducts = [
   {
     name: "Eco LED Desk Lamp",
     price: 24.49,
-    oldPrice: null,
+    oldPrice: 34.00,
     image: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
     tag: "",
     reviews: 4.2,
@@ -52,24 +52,26 @@ export function initializeAlternativeProducts() {
     
     // Create section description
     const sectionDescription = document.createElement('p');
-    sectionDescription.textContent = 'A smart mix of price, speed, quality, and reviews.';
+    sectionDescription.textContent = 'Similar products with better prices will appear when browsing.';
     alternativesSection.appendChild(sectionDescription);
     
     // Create products container
     const productsContainer = document.createElement('div');
     productsContainer.className = 'alternative-products-container';
     
-    // Get current prioritization mode
-    chrome.storage.sync.get('prioritizeBy', function(data) {
-      const mode = data.prioritizeBy || 'balanced';
-      
-      // Add alternative products based on mode
-      const filteredProducts = filterProductsByMode(alternativeProducts, mode);
-      filteredProducts.forEach(product => {
-        const productCard = createProductCard(product);
-        productsContainer.appendChild(productCard);
-      });
-    });
+    // Default state - products are hidden until user is browsing a product
+    const initialMessage = document.createElement('div');
+    initialMessage.className = 'no-products-message';
+    initialMessage.innerHTML = `
+      <div class="text-center py-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
+      </div>
+    `;
+    productsContainer.appendChild(initialMessage);
     
     alternativesSection.appendChild(productsContainer);
     
@@ -82,9 +84,41 @@ export function initializeAlternativeProducts() {
       document.querySelector('.content').appendChild(alternativesSection);
     }
     
+    // Add event listener for product detection message
+    chrome.runtime.onMessage.addListener(function(message) {
+      if (message.type === 'PRODUCT_DETECTED') {
+        // Product detected, show relevant alternatives
+        showProductAlternatives();
+      }
+    });
+    
     // Add CSS for the alternative products section
     addAlternativeProductsStyles();
   }
+}
+
+// Function to show product alternatives when a product is detected
+function showProductAlternatives() {
+  const productsContainer = document.querySelector('.alternative-products-container');
+  if (!productsContainer) return;
+  
+  // Clear current content
+  productsContainer.innerHTML = '';
+  
+  // Get current prioritization mode
+  chrome.storage.sync.get('prioritizeBy', function(data) {
+    const mode = data.prioritizeBy || 'balanced';
+    console.log("Filtering mode:", mode);
+    
+    // Add alternative products based on mode
+    const filteredProducts = filterProductsByMode(alternativeProducts, mode);
+    console.log("Final filtered products:", filteredProducts.map(p => p.name));
+    
+    filteredProducts.forEach(product => {
+      const productCard = createProductCard(product);
+      productsContainer.appendChild(productCard);
+    });
+  });
 }
 
 // Function to update the visibility of the alternatives section
@@ -97,8 +131,6 @@ export function updateAlternativesSection(show) {
 
 // Function to filter products based on prioritization mode
 export function filterProductsByMode(products, mode) {
-  console.log("Filtering by mode:", mode);
-  
   // Define products with high reviews (4.5+ stars)
   const highReviewProducts = products.filter(product => product.reviews >= 4.5);
   console.log("High review products:", highReviewProducts.map(p => p.name));
@@ -107,9 +139,9 @@ export function filterProductsByMode(products, mode) {
   const fastShippingProducts = products.filter(product => product.shipping === "Fast");
   console.log("Fast shipping products:", fastShippingProducts.map(p => p.name));
   
-  // Define products with good deals
-  const dealProducts = products.filter(product => product.tag === "Deal!");
-  console.log("Deal products:", dealProducts.map(p => p.name));
+  // Define products with good deals (lower prices)
+  const lowestPriceProducts = products.filter(product => product.oldPrice && (product.oldPrice - product.price) > 10);
+  console.log("Lowest price products:", lowestPriceProducts.map(p => p.name));
   
   // Define high quality products
   const highQualityProducts = products.filter(product => product.quality === "High");
@@ -119,24 +151,23 @@ export function filterProductsByMode(products, mode) {
   
   switch(mode) {
     case 'price':
-      filteredProducts = dealProducts;
+      filteredProducts = lowestPriceProducts.length > 0 ? lowestPriceProducts : products;
       break;
     case 'reviews':
-      filteredProducts = highReviewProducts;
+      filteredProducts = highReviewProducts.length > 0 ? highReviewProducts : products;
       break;
     case 'shipping':
-      filteredProducts = fastShippingProducts;
+      filteredProducts = fastShippingProducts.length > 0 ? fastShippingProducts : products;
       break;
     case 'balanced':
       // For balanced mode, we need to show a mix of all criteria
       const combinedSet = new Set();
       
-      // ALWAYS ensure we include at least one fast shipping product in balanced mode
+      // Try to add one product from each category for balanced mode
       if (fastShippingProducts.length > 0) {
         combinedSet.add(fastShippingProducts[0]);
       }
       
-      // Add high review product if available and not already added
       if (highReviewProducts.length > 0) {
         const reviewProduct = highReviewProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
         if (reviewProduct) {
@@ -144,10 +175,10 @@ export function filterProductsByMode(products, mode) {
         }
       }
       
-      if (dealProducts.length > 0) {
-        const dealProduct = dealProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
-        if (dealProduct) {
-          combinedSet.add(dealProduct);
+      if (lowestPriceProducts.length > 0) {
+        const priceProduct = lowestPriceProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        if (priceProduct) {
+          combinedSet.add(priceProduct);
         }
       }
       
@@ -165,7 +196,7 @@ export function filterProductsByMode(products, mode) {
         }
       }
       
-      console.log("Balanced mode products:", Array.from(combinedSet).map(p => p.name));
+      console.log("Balanced filtered products:", Array.from(combinedSet).map(p => p.name));
       filteredProducts = Array.from(combinedSet);
       break;
     default:
@@ -183,13 +214,32 @@ export function refreshAlternativeProducts(mode) {
   // Clear current products
   productsContainer.innerHTML = '';
   
-  // Filter products based on mode
-  const filteredProducts = filterProductsByMode(alternativeProducts, mode);
-  
-  // Add filtered products
-  filteredProducts.forEach(product => {
-    const productCard = createProductCard(product);
-    productsContainer.appendChild(productCard);
+  // Check if we have a detected product, if not show the initial message
+  chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
+    if (response && response.hasActiveProduct) {
+      // Filter products based on mode
+      const filteredProducts = filterProductsByMode(alternativeProducts, mode);
+      
+      // Add filtered products
+      filteredProducts.forEach(product => {
+        const productCard = createProductCard(product);
+        productsContainer.appendChild(productCard);
+      });
+    } else {
+      // No product detected, show initial message
+      const initialMessage = document.createElement('div');
+      initialMessage.className = 'no-products-message';
+      initialMessage.innerHTML = `
+        <div class="text-center py-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
+        </div>
+      `;
+      productsContainer.appendChild(initialMessage);
+    }
   });
 }
 
@@ -258,8 +308,7 @@ function createProductCard(product) {
     tagContainer.appendChild(reviewTag);
   }
   
-  // Fast shipping tag - ALWAYS show this tag when product has fast shipping
-  // This ensures the fast shipping tag is displayed regardless of mode
+  // Fast shipping tag - always show when product has fast shipping
   if (product.shipping === "Fast") {
     const shippingTag = document.createElement('span');
     shippingTag.className = 'product-tag shipping-tag';
@@ -366,6 +415,7 @@ function addAlternativeProductsStyles() {
     .product-tags {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 5px;
     }
     
@@ -395,6 +445,11 @@ function addAlternativeProductsStyles() {
     
     .option.active-option span {
       color: white;
+    }
+    
+    .no-products-message {
+      grid-column: 1 / -1;
+      color: #6b7280;
     }
   `;
   document.head.appendChild(style);

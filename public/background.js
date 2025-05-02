@@ -1,6 +1,10 @@
+
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL } from './apify-integration.js';
 import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration.js';
+
+// Track currently active product
+let activeProduct = null;
 
 // Listen for installation event
 chrome.runtime.onInstalled.addListener(async () => {
@@ -26,9 +30,13 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PRODUCT_DETECTED') {
+    activeProduct = message.data;
     handleProductDetection(message.data, sender.tab.id);
     sendResponse({ success: true });
     return true; // Keep the messaging channel open for async response
+  } else if (message.type === 'CHECK_ACTIVE_PRODUCT') {
+    sendResponse({ hasActiveProduct: activeProduct !== null });
+    return false;
   } else if (message.type === 'GET_SUBSCRIPTION_STATUS') {
     getSubscriptionStatus().then(sendResponse);
     return true; // Keep the messaging channel open for async response
@@ -37,7 +45,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep the messaging channel open for async response
   } else if (message.type === 'SCRAPE_PRODUCT_URL') {
     scrapeProductURL(message.url, sender.tab.id)
-      .then(result => sendResponse({ success: true, data: result }))
+      .then(result => {
+        if (result) {
+          activeProduct = result;
+        }
+        sendResponse({ success: true, data: result });
+      })
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep the messaging channel open for async response
   } else if (message.type === 'ANALYZE_REVIEWS') {
@@ -137,6 +150,17 @@ async function scrapeProductURL(url, tabId) {
 // Handle product detection
 async function handleProductDetection(productData, tabId) {
   try {
+    // Store as active product
+    activeProduct = productData;
+    
+    // Notify popup about product detection in case popup is open
+    chrome.runtime.sendMessage({
+      type: 'PRODUCT_DETECTED', 
+      data: productData
+    }).catch(() => {
+      // Ignore error if popup is not open
+    });
+    
     // Notify content script that product analysis has started
     chrome.tabs.sendMessage(tabId, {
       type: 'PRODUCT_ANALYSIS_STATUS',

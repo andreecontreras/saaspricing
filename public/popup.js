@@ -1,3 +1,4 @@
+
 // Main popup.js file - imports and coordinates all functionality
 import { initializeApiKey } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
@@ -24,7 +25,26 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Update Hugging Face status to disabled
   initializeHuggingFace();
+  
+  // Check for active product
+  checkForActiveProduct();
 });
+
+// Function to check if there's an active product and update the UI accordingly
+function checkForActiveProduct() {
+  chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
+    if (response && response.hasActiveProduct) {
+      // Product detected, refresh the alternatives section
+      chrome.storage.sync.get('prioritizeBy', function(data) {
+        const mode = data.prioritizeBy || 'balanced';
+        // Use the existing function from alternative-products.js
+        import('./js/alternative-products.js').then(module => {
+          module.refreshAlternativeProducts(mode);
+        });
+      });
+    }
+  });
+}
 
 // Function to initialize Hugging Face integration status as disabled
 function initializeHuggingFace() {
