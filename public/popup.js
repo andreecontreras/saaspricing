@@ -1,3 +1,4 @@
+
 // Main popup.js file - imports and coordinates all functionality
 import { initializeApiKey } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
@@ -7,7 +8,9 @@ import { initSentimentAnalysis } from './js/huggingface-integration.js';
 
 // Initialize all features when popup is loaded
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize API integration
+  console.log("Scout.io popup loaded");
+  
+  // Initialize API integration (now using hardcoded key)
   initializeApiKey();
   
   // Initialize toggle and trial banner
