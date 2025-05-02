@@ -1,4 +1,3 @@
-
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL } from './apify-integration.js';
 import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration.js';
@@ -49,23 +48,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Analyze product reviews using Hugging Face
+// Analyze product reviews using mock data (Hugging Face disabled)
 async function analyzeProductReviews(reviews) {
   try {
-    console.log('Analyzing product reviews with Hugging Face...');
+    console.log('Using mock data for product reviews (Hugging Face disabled)');
     
-    // Analyze sentiment
-    const sentimentAnalysis = await analyzeReviews(reviews);
+    // Create mock sentiment analysis data
+    const sentimentAnalysis = {
+      positiveCount: Math.floor(reviews.length * 0.7),
+      negativeCount: Math.floor(reviews.length * 0.1),
+      positivePct: 70,
+      negativePct: 10,
+      neutralPct: 20,
+      averageSentiment: 0.7
+    };
     
-    // Extract key pros and cons
-    const keyInsights = await extractKeyInsights(reviews);
+    // Create mock insights
+    const keyInsights = {
+      topPros: [
+        "Good value for money",
+        "Fast shipping",
+        "Quality product"
+      ],
+      topCons: [
+        "Some issues reported",
+        "Could be improved"
+      ]
+    };
     
     return {
       sentimentAnalysis,
       keyInsights
     };
   } catch (error) {
-    console.error('Error analyzing product reviews:', error);
+    console.error('Error with mock product reviews:', error);
     throw error;
   }
 }
@@ -157,7 +173,7 @@ async function handleProductDetection(productData, tabId) {
       ];
     }
     
-    // If we have product reviews, analyze them with Hugging Face
+    // If we have product reviews, analyze them with mock data
     if (productData.reviews && productData.reviews.length > 0) {
       try {
         chrome.tabs.sendMessage(tabId, {

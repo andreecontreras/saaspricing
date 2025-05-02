@@ -1,4 +1,3 @@
-
 // Main popup.js file - imports and coordinates all functionality
 import { initializeApiKey } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
@@ -23,27 +22,16 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize alternative products
   initializeAlternativeProducts();
   
-  // Initialize Hugging Face integration
+  // Update Hugging Face status to disabled
   initializeHuggingFace();
 });
 
-// Function to initialize Hugging Face integration
+// Function to initialize Hugging Face integration status as disabled
 function initializeHuggingFace() {
   const hfStatus = document.getElementById('hf-status');
   if (hfStatus) {
-    hfStatus.textContent = 'Loading...';
-    
-    // Try to initialize the sentiment model
-    initSentimentAnalysis()
-      .then(() => {
-        hfStatus.textContent = 'Ready';
-        hfStatus.classList.add('connected');
-      })
-      .catch(error => {
-        console.error('Error initializing Hugging Face model:', error);
-        hfStatus.textContent = 'Error';
-        hfStatus.classList.add('not-connected');
-      });
+    hfStatus.textContent = 'Disabled';
+    hfStatus.classList.add('not-connected');
   }
 }
 
