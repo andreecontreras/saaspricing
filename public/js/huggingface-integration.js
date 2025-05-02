@@ -1,7 +1,5 @@
 
 // Hugging Face integration for AI review analysis
-import { pipeline } from '@huggingface/transformers';
-
 let sentimentModel = null;
 let loadingPromise = null;
 
@@ -17,6 +15,9 @@ export async function initSentimentAnalysis() {
     const statusEl = document.getElementById('hf-status');
     if (statusEl) statusEl.textContent = 'Loading model...';
     
+    // Dynamic import to ensure browser compatibility
+    const { pipeline } = await import('@huggingface/transformers');
+    
     // Initialize the model loading once and cache the promise
     loadingPromise = pipeline(
       'sentiment-analysis',
@@ -27,12 +28,19 @@ export async function initSentimentAnalysis() {
     sentimentModel = await loadingPromise;
     console.log("Sentiment analysis model loaded successfully");
     
-    if (statusEl) statusEl.textContent = 'Model loaded';
+    if (statusEl) {
+      statusEl.textContent = 'Model loaded';
+      statusEl.classList.add('connected');
+    }
     
     return sentimentModel;
   } catch (error) {
     console.error("Error loading sentiment analysis model:", error);
-    if (statusEl) statusEl.textContent = 'Error loading model';
+    const statusEl = document.getElementById('hf-status');
+    if (statusEl) {
+      statusEl.textContent = 'Error loading model';
+      statusEl.classList.add('not-connected');
+    }
     loadingPromise = null;
     throw error;
   }
