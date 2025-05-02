@@ -20,20 +20,25 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize display options
   initializeDisplayOptions();
   
-  // Initialize alternative products
+  // Initialize alternative products section
   initializeAlternativeProducts();
   
   // Update Hugging Face status to disabled
   initializeHuggingFace();
   
-  // Check for active product
+  // Check for active product - this will update the UI if a product is being browsed
   checkForActiveProduct();
+  
+  console.log("Popup initialized, checking for active product...");
 });
 
 // Function to check if there's an active product and update the UI accordingly
 function checkForActiveProduct() {
   chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
+    console.log("Active product check response:", response);
+    
     if (response && response.hasActiveProduct) {
+      console.log("Active product found, refreshing alternatives section");
       // Product detected, refresh the alternatives section
       chrome.storage.sync.get('prioritizeBy', function(data) {
         const mode = data.prioritizeBy || 'balanced';
@@ -42,6 +47,8 @@ function checkForActiveProduct() {
           module.refreshAlternativeProducts(mode);
         });
       });
+    } else {
+      console.log("No active product found");
     }
   });
 }

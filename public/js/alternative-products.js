@@ -58,20 +58,10 @@ export function initializeAlternativeProducts() {
     // Create products container
     const productsContainer = document.createElement('div');
     productsContainer.className = 'alternative-products-container';
+    productsContainer.id = 'alternative-products-container';
     
-    // Default state - products are hidden until user is browsing a product
-    const initialMessage = document.createElement('div');
-    initialMessage.className = 'no-products-message';
-    initialMessage.innerHTML = `
-      <div class="text-center py-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
-      </div>
-    `;
-    productsContainer.appendChild(initialMessage);
+    // Default state - show the message since no product is being browsed initially
+    showNoProductsMessage(productsContainer);
     
     alternativesSection.appendChild(productsContainer);
     
@@ -84,11 +74,25 @@ export function initializeAlternativeProducts() {
       document.querySelector('.content').appendChild(alternativesSection);
     }
     
-    // Add event listener for product detection message
+    // Add event listener for product detection message from the background script
     chrome.runtime.onMessage.addListener(function(message) {
-      if (message.type === 'PRODUCT_DETECTED') {
+      if (message.type === 'PRODUCT_DATA_READY' || message.type === 'PRODUCT_DETECTED') {
+        console.log('Product detected, showing alternatives');
         // Product detected, show relevant alternatives
-        showProductAlternatives();
+        const mode = localStorage.getItem('prioritizeBy') || 'balanced';
+        refreshAlternativeProducts(mode);
+      }
+    });
+    
+    // Check if we already have an active product when popup opens
+    chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
+      if (response && response.hasActiveProduct) {
+        console.log('Active product found on popup open, showing alternatives');
+        // Product already detected, show relevant alternatives
+        chrome.storage.sync.get('prioritizeBy', function(data) {
+          const mode = data.prioritizeBy || 'balanced';
+          refreshAlternativeProducts(mode);
+        });
       }
     });
     
@@ -97,9 +101,29 @@ export function initializeAlternativeProducts() {
   }
 }
 
+// Function to display "no products" message
+function showNoProductsMessage(container) {
+  // Clear the container first
+  container.innerHTML = '';
+  
+  // Add the no products message
+  const initialMessage = document.createElement('div');
+  initialMessage.className = 'no-products-message';
+  initialMessage.innerHTML = `
+    <div class="text-center py-6">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
+    </div>
+  `;
+  container.appendChild(initialMessage);
+}
+
 // Function to show product alternatives when a product is detected
 function showProductAlternatives() {
-  const productsContainer = document.querySelector('.alternative-products-container');
+  const productsContainer = document.getElementById('alternative-products-container');
   if (!productsContainer) return;
   
   // Clear current content
@@ -114,10 +138,15 @@ function showProductAlternatives() {
     const filteredProducts = filterProductsByMode(alternativeProducts, mode);
     console.log("Final filtered products:", filteredProducts.map(p => p.name));
     
-    filteredProducts.forEach(product => {
-      const productCard = createProductCard(product);
-      productsContainer.appendChild(productCard);
-    });
+    if (filteredProducts.length > 0) {
+      filteredProducts.forEach(product => {
+        const productCard = createProductCard(product);
+        productsContainer.appendChild(productCard);
+      });
+    } else {
+      // If no products match the filter, show the message
+      showNoProductsMessage(productsContainer);
+    }
   });
 }
 
@@ -208,7 +237,7 @@ export function filterProductsByMode(products, mode) {
 
 // Function to refresh alternative products based on prioritization mode
 export function refreshAlternativeProducts(mode) {
-  const productsContainer = document.querySelector('.alternative-products-container');
+  const productsContainer = document.getElementById('alternative-products-container');
   if (!productsContainer) return;
   
   // Clear current products
@@ -216,29 +245,26 @@ export function refreshAlternativeProducts(mode) {
   
   // Check if we have a detected product, if not show the initial message
   chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
+    console.log('Checking for active product:', response);
+    
     if (response && response.hasActiveProduct) {
+      console.log('Active product confirmed, showing alternatives');
       // Filter products based on mode
       const filteredProducts = filterProductsByMode(alternativeProducts, mode);
       
       // Add filtered products
-      filteredProducts.forEach(product => {
-        const productCard = createProductCard(product);
-        productsContainer.appendChild(productCard);
-      });
+      if (filteredProducts.length > 0) {
+        filteredProducts.forEach(product => {
+          const productCard = createProductCard(product);
+          productsContainer.appendChild(productCard);
+        });
+      } else {
+        showNoProductsMessage(productsContainer);
+      }
     } else {
+      console.log('No active product, showing message');
       // No product detected, show initial message
-      const initialMessage = document.createElement('div');
-      initialMessage.className = 'no-products-message';
-      initialMessage.innerHTML = `
-        <div class="text-center py-6">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
-        </div>
-      `;
-      productsContainer.appendChild(initialMessage);
+      showNoProductsMessage(productsContainer);
     }
   });
 }

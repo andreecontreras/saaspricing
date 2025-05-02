@@ -29,12 +29,16 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('Background script received message:', message.type);
+  
   if (message.type === 'PRODUCT_DETECTED') {
+    console.log('Product detected:', message.data);
     activeProduct = message.data;
     handleProductDetection(message.data, sender.tab.id);
     sendResponse({ success: true });
     return true; // Keep the messaging channel open for async response
   } else if (message.type === 'CHECK_ACTIVE_PRODUCT') {
+    console.log('Checking for active product:', activeProduct !== null);
     sendResponse({ hasActiveProduct: activeProduct !== null });
     return false;
   } else if (message.type === 'GET_SUBSCRIPTION_STATUS') {
@@ -58,6 +62,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(result => sendResponse({ success: true, data: result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep the messaging channel open for async response
+  } else if (message.type === 'CLEAR_ACTIVE_PRODUCT') {
+    console.log('Clearing active product');
+    activeProduct = null;
+    sendResponse({ success: true });
+    return false;
   }
 });
 
@@ -253,6 +262,39 @@ async function handleProductDetection(productData, tabId) {
   }
 }
 
+// Get user subscription status
+async function getSubscriptionStatus() {
+  try {
+    const data = await chrome.storage.sync.get([
+      'userSubscription', 
+      'trialEndDate'
+    ]);
+    
+    const now = new Date();
+    const trialEnd = new Date(data.trialEndDate || 0);
+    
+    let status = data.userSubscription || 'free';
+    let daysRemaining = 0;
+    
+    if (status === 'trial' && trialEnd > now) {
+      daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+    } else if (status === 'trial' && trialEnd <= now) {
+      // Trial expired, update to free
+      status = 'free';
+      await chrome.storage.sync.set({ userSubscription: 'free' });
+    }
+    
+    return {
+      status,
+      daysRemaining,
+      trialEndDate: data.trialEndDate
+    };
+  } catch (error) {
+    console.error('Error getting subscription status:', error);
+    return { status: 'error', error: error.message };
+  }
+}
+
 // Generate mock product data for demo purposes
 function generateMockProductData(productData) {
   const currentPrice = productData.price || 99.99;
@@ -330,37 +372,4 @@ function generateMockProductData(productData) {
       }
     ]
   };
-}
-
-// Get user subscription status
-async function getSubscriptionStatus() {
-  try {
-    const data = await chrome.storage.sync.get([
-      'userSubscription', 
-      'trialEndDate'
-    ]);
-    
-    const now = new Date();
-    const trialEnd = new Date(data.trialEndDate || 0);
-    
-    let status = data.userSubscription || 'free';
-    let daysRemaining = 0;
-    
-    if (status === 'trial' && trialEnd > now) {
-      daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
-    } else if (status === 'trial' && trialEnd <= now) {
-      // Trial expired, update to free
-      status = 'free';
-      await chrome.storage.sync.set({ userSubscription: 'free' });
-    }
-    
-    return {
-      status,
-      daysRemaining,
-      trialEndDate: data.trialEndDate
-    };
-  } catch (error) {
-    console.error('Error getting subscription status:', error);
-    return { status: 'error', error: error.message };
-  }
 }
