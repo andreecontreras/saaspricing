@@ -6,6 +6,9 @@ import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration
 // Track currently active product
 let activeProduct = null;
 
+// Store current product data
+let currentProductData = null;
+
 // Track price history
 const priceHistory = {};
 
@@ -33,6 +36,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.local.get('priceHistory', (data) => {
     if (data.priceHistory) {
       Object.assign(priceHistory, data.priceHistory);
+      console.log('Loaded price history:', priceHistory);
     }
   });
 });
@@ -47,6 +51,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleProductDetection(message.data, sender.tab.id);
     sendResponse({ success: true });
     return true; // Keep the messaging channel open for async response
+  } else if (message.type === 'GET_PRODUCT_DATA') {
+    console.log('Product data requested, sending:', currentProductData);
+    sendResponse({ success: true, data: currentProductData });
+    return false;
   } else if (message.type === 'CHECK_ACTIVE_PRODUCT') {
     console.log('Checking for active product:', activeProduct !== null);
     sendResponse({ hasActiveProduct: activeProduct !== null });
@@ -87,6 +95,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === 'CLEAR_ACTIVE_PRODUCT') {
     console.log('Clearing active product');
     activeProduct = null;
+    currentProductData = null;
     sendResponse({ success: true });
     return false;
   } else if (message.type === 'TRACK_PRICE_DROPS') {
@@ -199,13 +208,18 @@ function trackPriceDrops(productUrl, currentPrice) {
     date: timestamp
   });
   
+  console.log(`Added price point for ${productUrl}: $${currentPrice} at ${new Date(timestamp).toLocaleString()}`);
+  console.log('Updated price history:', priceHistory[productUrl]);
+  
   // Limit history to 100 entries per product
   if (priceHistory[productUrl].length > 100) {
     priceHistory[productUrl] = priceHistory[productUrl].slice(-100);
   }
   
   // Save updated price history to storage
-  chrome.storage.local.set({ 'priceHistory': priceHistory });
+  chrome.storage.local.set({ 'priceHistory': priceHistory }, () => {
+    console.log('Price history saved to storage');
+  });
   
   // Check if this is a price drop
   checkForPriceDrop(productUrl, currentPrice);
@@ -228,6 +242,8 @@ function checkForPriceDrop(productUrl, currentPrice) {
   // Calculate percentage drop
   const priceDrop = ((lastPrice - currentPrice) / lastPrice) * 100;
   
+  console.log(`Price drop calculation: Previous price $${lastPrice}, Current price $${currentPrice}, Drop: ${priceDrop.toFixed(2)}%`);
+  
   // Get minimum drop percentage from settings
   chrome.storage.sync.get('minimumPriceDropPercent', (data) => {
     const minDropPercent = data.minimumPriceDropPercent || 5;
@@ -235,6 +251,8 @@ function checkForPriceDrop(productUrl, currentPrice) {
     // Check if we should notify
     chrome.storage.sync.get('notifyPriceDrops', (dropData) => {
       if (dropData.notifyPriceDrops && priceDrop >= minDropPercent) {
+        console.log(`Significant price drop detected: ${priceDrop.toFixed(2)}% - Creating notification`);
+        
         // Create notification
         chrome.notifications.create({
           type: 'basic',
@@ -243,6 +261,8 @@ function checkForPriceDrop(productUrl, currentPrice) {
           message: `The price has dropped by ${priceDrop.toFixed(2)}%! Now: $${currentPrice.toFixed(2)}`,
           priority: 2
         });
+      } else {
+        console.log(`Price drop ${priceDrop.toFixed(2)}% is below threshold ${minDropPercent}% or notifications are disabled`);
       }
     });
   });
@@ -310,17 +330,22 @@ async function handleProductDetection(productData, tabId) {
     try {
       // Use Apify to search for similar products
       const scrapedData = await searchProductPrices(productData);
+      console.log('Scraped data from Apify:', scrapedData);
+      
       if (scrapedData && scrapedData.length > 0) {
         const processedData = processScrapedData(scrapedData, productData);
+        console.log('Processed data:', processedData);
+        
         if (processedData && processedData.allPrices) {
           alternatives = processedData.allPrices.map(item => ({
-            title: item.title,
-            rating: ((Math.random() * 0.5) + 4).toFixed(1),
+            title: item.title || "Product",
+            rating: item.rating || ((Math.random() * 0.5) + 4).toFixed(1),
             price: item.price,
-            image: "https://via.placeholder.com/100", // Placeholder since we don't have images
-            url: item.url,
+            image: item.image || "https://via.placeholder.com/100",
+            url: item.url || "#",
             advantage: item.price < productData.price ? "Better price" : "Alternative"
           }));
+          console.log('Generated alternatives from Apify data:', alternatives);
         }
       }
     } catch (error) {
@@ -329,6 +354,7 @@ async function handleProductDetection(productData, tabId) {
     
     // If we couldn't get real alternatives, use mock data
     if (!alternatives || alternatives.length === 0) {
+      console.log('Using mock alternatives since Apify did not return usable data');
       alternatives = generateMockAlternatives(productData);
     }
     
@@ -374,6 +400,10 @@ async function handleProductDetection(productData, tabId) {
       },
       alternatives: alternatives || []
     };
+    
+    // Store the processed data so it can be requested by the popup
+    currentProductData = result;
+    console.log('Updated current product data:', currentProductData);
     
     // Send the processed data back to any listeners
     chrome.runtime.sendMessage({

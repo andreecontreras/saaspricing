@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Apply hardware acceleration class to key elements for smoother animations
   applyHardwareAcceleration();
   
-  // Initialize API integration (now using hardcoded key)
+  // Initialize API integration first (now using hardcoded key)
   const apiKey = initializeApiKey();
   console.log('API key from initialization:', apiKey);
   
@@ -59,7 +59,25 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 100);
     }
   });
+  
+  // Check for product data immediately on popup open
+  requestProductData();
 });
+
+// Function to request product data from background script
+function requestProductData() {
+  console.log('Requesting product data from background script...');
+  chrome.runtime.sendMessage({
+    type: 'GET_PRODUCT_DATA'
+  }, function(response) {
+    if (response && response.data) {
+      console.log('Received product data on popup open:', response.data);
+      updateProductDisplay(response.data);
+    } else {
+      console.log('No product data available yet on popup open');
+    }
+  });
+}
 
 // Function to update the product display with real data
 function updateProductDisplay(data) {
@@ -271,6 +289,8 @@ function checkForActiveProduct() {
         // Use the existing function from alternative-products.js
         import('./js/alternative-products.js').then(module => {
           module.refreshAlternativeProducts(mode);
+          // Also request latest product data
+          requestProductData();
         });
       });
     } else {
