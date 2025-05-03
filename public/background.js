@@ -1,7 +1,6 @@
 
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL, testApifyApiKey } from './apify-integration.js';
-import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration.js';
 
 // Track currently active product
 let activeProduct = null;
@@ -24,8 +23,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     showAlternatives: true,
     notifyPriceDrops: true,
     minimumPriceDropPercent: 5, // Notify only for 5% or more price drop
-    userSubscription: 'trial', // 'trial', 'free', 'premium'
-    trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7-day trial
+    userSubscription: 'free', // 'free', 'premium'
     apifyApiKey: 'apify_api_y9gocF4ETXbAde3CoqrbjiDOYpztOQ4zcywQ' // Initialize with hardcoded API key
   });
   
@@ -60,9 +58,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Checking for active product:', activeProduct !== null);
     sendResponse({ hasActiveProduct: activeProduct !== null });
     return false;
-  } else if (message.type === 'GET_SUBSCRIPTION_STATUS') {
-    getSubscriptionStatus().then(sendResponse);
-    return true; // Keep the messaging channel open for async response
   } else if (message.type === 'SAVE_APIFY_API_KEY') {
     saveApifyApiKey(message.apiKey).then(sendResponse);
     return true; // Keep the messaging channel open for async response
@@ -86,11 +81,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         sendResponse({ success: true, data: result });
       })
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true; // Keep the messaging channel open for async response
-  } else if (message.type === 'ANALYZE_REVIEWS') {
-    analyzeProductReviews(message.reviews)
-      .then(result => sendResponse({ success: true, data: result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep the messaging channel open for async response
   } else if (message.type === 'CLEAR_ACTIVE_PRODUCT') {
@@ -150,44 +140,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 });
-
-// Analyze product reviews using mock data (Hugging Face disabled)
-async function analyzeProductReviews(reviews) {
-  try {
-    console.log('Using mock data for product reviews (Hugging Face disabled)');
-    
-    // Create mock sentiment analysis data
-    const sentimentAnalysis = {
-      positiveCount: Math.floor(reviews.length * 0.7),
-      negativeCount: Math.floor(reviews.length * 0.1),
-      positivePct: 70,
-      negativePct: 10,
-      neutralPct: 20,
-      averageSentiment: 0.7
-    };
-    
-    // Create mock insights
-    const keyInsights = {
-      topPros: [
-        "Good value for money",
-        "Fast shipping",
-        "Quality product"
-      ],
-      topCons: [
-        "Some issues reported",
-        "Could be improved"
-      ]
-    };
-    
-    return {
-      sentimentAnalysis,
-      keyInsights
-    };
-  } catch (error) {
-    console.error('Error with mock product reviews:', error);
-    throw error;
-  }
-}
 
 // Save Apify API key
 async function saveApifyApiKey(apiKey) {
@@ -281,33 +233,39 @@ function checkForPriceDrop(productUrl, currentPrice) {
 async function scrapeProductURL(url, tabId) {
   try {
     // Notify content script that scraping has started
-    chrome.tabs.sendMessage(tabId, {
-      type: 'SCRAPING_STATUS',
-      status: 'started',
-      message: 'Starting to scrape product data...'
-    });
+    if (tabId) {
+      chrome.tabs.sendMessage(tabId, {
+        type: 'SCRAPING_STATUS',
+        status: 'started',
+        message: 'Starting to scrape product data...'
+      }).catch(err => console.log('Error sending message to tab, may not be active yet:', err));
+    }
     
     // Scrape the URL
     const productData = await quickScrapeProductURL(url);
     
     // Notify content script with results
-    chrome.tabs.sendMessage(tabId, {
-      type: 'SCRAPING_STATUS',
-      status: productData ? 'success' : 'error',
-      message: productData ? 'Successfully scraped product data' : 'Failed to scrape product data',
-      data: productData
-    });
+    if (tabId) {
+      chrome.tabs.sendMessage(tabId, {
+        type: 'SCRAPING_STATUS',
+        status: productData ? 'success' : 'error',
+        message: productData ? 'Successfully scraped product data' : 'Failed to scrape product data',
+        data: productData
+      }).catch(err => console.log('Error sending message to tab, may not be active yet:', err));
+    }
     
     return productData;
   } catch (error) {
     console.error('Error scraping product URL:', error);
     
     // Notify content script of error
-    chrome.tabs.sendMessage(tabId, {
-      type: 'SCRAPING_STATUS',
-      status: 'error',
-      message: `Error: ${error.message}`
-    });
+    if (tabId) {
+      chrome.tabs.sendMessage(tabId, {
+        type: 'SCRAPING_STATUS',
+        status: 'error',
+        message: `Error: ${error.message}`
+      }).catch(err => console.log('Error sending message to tab, may not be active yet:', err));
+    }
     
     throw error;
   }
@@ -522,37 +480,4 @@ function generateMockAlternatives(productData) {
       seller: "Best Buy"
     }
   ];
-}
-
-// Get user subscription status
-async function getSubscriptionStatus() {
-  try {
-    const data = await chrome.storage.sync.get([
-      'userSubscription', 
-      'trialEndDate'
-    ]);
-    
-    const now = new Date();
-    const trialEnd = new Date(data.trialEndDate || 0);
-    
-    let status = data.userSubscription || 'free';
-    let daysRemaining = 0;
-    
-    if (status === 'trial' && trialEnd > now) {
-      daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
-    } else if (status === 'trial' && trialEnd <= now) {
-      // Trial expired, update to free
-      status = 'free';
-      await chrome.storage.sync.set({ userSubscription: 'free' });
-    }
-    
-    return {
-      status,
-      daysRemaining,
-      trialEndDate: data.trialEndDate
-    };
-  } catch (error) {
-    console.error('Error getting subscription status:', error);
-    return { status: 'error', error: error.message };
-  }
 }
