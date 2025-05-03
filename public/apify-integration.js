@@ -18,6 +18,30 @@ async function initApifyIntegration() {
   }
 }
 
+// Test if the API key is valid
+async function testApifyApiKey(apiKey) {
+  try {
+    console.log('Testing Apify API key');
+    const response = await fetch(`${APIFY_BASE_URL}/users/me`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+    
+    if (!response.ok) {
+      console.error('Apify API key test failed:', response.status);
+      return false;
+    }
+    
+    const userData = await response.json();
+    console.log('Apify API key test successful:', userData);
+    return true;
+  } catch (error) {
+    console.error('Error testing Apify API key:', error);
+    return false;
+  }
+}
+
 // Search for product prices across multiple websites
 async function searchProductPrices(productData) {
   if (!APIFY_API_KEY) {
@@ -381,6 +405,7 @@ async function quickScrapeProductURL(url) {
 // Export the module functions
 export {
   initApifyIntegration,
+  testApifyApiKey,
   searchProductPrices,
   processScrapedData,
   quickScrapeProductURL

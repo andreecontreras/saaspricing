@@ -1,3 +1,4 @@
+
 // API integration functionality
 
 // Initialize API key functionality
@@ -17,9 +18,22 @@ function saveApiKeyInternal(apiKey) {
     }, function(response) {
       if (response && response.success) {
         console.log('API key set successfully');
+        
+        // Verify that the key is working by testing it
+        testApiKey(apiKey);
       } else {
         console.error('Failed to save API key:', response ? response.error : 'Unknown error');
       }
     });
   }
+}
+
+// Function to test if API key is working
+function testApiKey(apiKey) {
+  chrome.runtime.sendMessage({
+    type: 'TEST_APIFY_API_KEY',
+    apiKey: apiKey
+  }, function(response) {
+    console.log('API key test result:', response ? response.success : 'No response');
+  });
 }

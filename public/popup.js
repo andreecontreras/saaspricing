@@ -1,9 +1,8 @@
-
 // Main popup.js file - imports and coordinates all functionality
 import { initializeApiKey } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
 import { initializeDisplayOptions } from './js/display-options.js';
-import { initializeAlternativeProducts } from './js/alternative-products.js';
+import { initializeAlternativeProducts, forceShowProducts } from './js/alternative-products.js';
 import { initSentimentAnalysis } from './js/huggingface-integration.js';
 
 // Initialize all features when popup is loaded
@@ -31,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize Hugging Face
   initializeHuggingFace();
   
+  // Add test button for forcing product display
+  addTestButton();
+  
   // Check for active product - this will update the UI if a product is being browsed
   console.log("Checking for active product on DOM content load...");
   checkForActiveProduct();
@@ -38,6 +40,49 @@ document.addEventListener('DOMContentLoaded', function() {
   // Apply Lovable style classes to ensure consistency
   applyLovableStyleClasses();
 });
+
+// Function to add a test button for developer testing
+function addTestButton() {
+  const footer = document.querySelector('.footer');
+  
+  if (footer) {
+    const testButton = document.createElement('button');
+    testButton.textContent = 'Test Product Detection';
+    testButton.className = 'test-button';
+    testButton.style.cssText = `
+      background: #8b5cf6;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-size: 12px;
+    `;
+    
+    testButton.addEventListener('click', function() {
+      console.log("Testing product detection...");
+      // First try to send message to active tab
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs && tabs[0] && tabs[0].id) {
+          chrome.runtime.sendMessage({
+            type: 'FORCE_PRODUCT_DETECTION',
+            tabId: tabs[0].id
+          }, function(response) {
+            if (response && response.success) {
+              console.log("Forced product detection successful");
+              forceShowProducts();
+            } else {
+              console.log("Forced product detection response:", response);
+            }
+          });
+        }
+      });
+    });
+    
+    footer.appendChild(testButton);
+  }
+}
 
 // Function to apply hardware acceleration to interactive elements
 function applyHardwareAcceleration() {

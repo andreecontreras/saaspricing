@@ -1,6 +1,6 @@
 
 // Background service worker for Scout.io Chrome Extension
-import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL } from './apify-integration.js';
+import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL, testApifyApiKey } from './apify-integration.js';
 import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration.js';
 
 // Track currently active product
@@ -47,6 +47,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === 'SAVE_APIFY_API_KEY') {
     saveApifyApiKey(message.apiKey).then(sendResponse);
     return true; // Keep the messaging channel open for async response
+  } else if (message.type === 'TEST_APIFY_API_KEY') {
+    testApifyApiKey(message.apiKey)
+      .then(result => sendResponse({ success: result }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true; // Keep messaging channel open
   } else if (message.type === 'SCRAPE_PRODUCT_URL') {
     scrapeProductURL(message.url, sender.tab.id)
       .then(result => {
@@ -67,6 +72,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     activeProduct = null;
     sendResponse({ success: true });
     return false;
+  } else if (message.type === 'FORCE_PRODUCT_DETECTION') {
+    // Force detection of a product for testing purposes
+    const mockProduct = {
+      title: "Test Product",
+      price: 99.99,
+      image: "https://via.placeholder.com/150",
+      url: "https://example.com/product"
+    };
+    
+    console.log('Forcing product detection:', mockProduct);
+    activeProduct = mockProduct;
+    handleProductDetection(mockProduct, sender.tab.id);
+    sendResponse({ success: true });
+    return true;
   }
 });
 
@@ -112,8 +131,8 @@ async function analyzeProductReviews(reviews) {
 async function saveApifyApiKey(apiKey) {
   try {
     await chrome.storage.sync.set({ apifyApiKey: apiKey });
-    await initApifyIntegration();
-    return { success: true };
+    const initResult = await initApifyIntegration();
+    return { success: initResult };
   } catch (error) {
     console.error('Error saving Apify API key:', error);
     return { success: false, error: error.message };

@@ -31,6 +31,26 @@ const alternativeProducts = [
     reviews: 4.2,
     shipping: "Standard",
     quality: "High"
+  },
+  {
+    name: "HD Web Camera",
+    price: 45.99,
+    oldPrice: 59.99,
+    image: "https://images.unsplash.com/photo-1544113559-d0769346e428?auto=format&fit=crop&w=320&q=80",
+    tag: "Popular",
+    reviews: 4.6,
+    shipping: "Standard",
+    quality: "High"
+  },
+  {
+    name: "Portable Monitor",
+    price: 129.99,
+    oldPrice: 169.99,
+    image: "https://images.unsplash.com/photo-1585792180666-f7347c490ee2?auto=format&fit=crop&w=320&q=80",
+    tag: "Bestseller",
+    reviews: 4.5,
+    shipping: "Fast",
+    quality: "Medium"
   }
 ];
 
@@ -225,7 +245,7 @@ export function filterProductsByMode(products, mode) {
       
       // If we still have room, add other products
       for (const product of products) {
-        if (combinedSet.size < 3 && !Array.from(combinedSet).some(item => item.name === product.name)) {
+        if (combinedSet.size < 5 && !Array.from(combinedSet).some(item => item.name === product.name)) {
           combinedSet.add(product);
         }
       }
@@ -237,6 +257,7 @@ export function filterProductsByMode(products, mode) {
       filteredProducts = products;
   }
   
+  console.log("Final filtered products:", filteredProducts.map(p => p.name));
   return filteredProducts;
 }
 
@@ -484,4 +505,32 @@ function addAlternativeProductsStyles() {
     }
   `;
   document.head.appendChild(style);
+}
+
+// Export function to force refresh products (for testing)
+export function forceShowProducts() {
+  const productsContainer = document.getElementById('alternative-products-container');
+  if (!productsContainer) return;
+  
+  // Clear current products
+  productsContainer.innerHTML = '';
+  
+  // Get current prioritization mode
+  chrome.storage.sync.get('prioritizeBy', function(data) {
+    const mode = data.prioritizeBy || 'balanced';
+    console.log("Forcing products display with mode:", mode);
+    
+    // Filter products based on mode
+    const filteredProducts = filterProductsByMode(alternativeProducts, mode);
+    
+    // Add filtered products
+    if (filteredProducts.length > 0) {
+      filteredProducts.forEach(product => {
+        const productCard = createProductCard(product);
+        productsContainer.appendChild(productCard);
+      });
+    } else {
+      showNoProductsMessage(productsContainer);
+    }
+  });
 }
