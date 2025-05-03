@@ -1,43 +1,27 @@
 
-// Mock Hugging Face integration (disabled)
-console.log("Hugging Face integration disabled");
+// Removed Hugging Face integration
+console.log("Hugging Face integration removed");
 
-// Initialize sentiment analysis model (mock)
+// Initialize sentiment analysis model (removed)
 export async function initSentimentAnalysis() {
-  const statusEl = document.getElementById('hf-status');
-  if (statusEl) {
-    statusEl.textContent = 'Disabled';
-    statusEl.classList.add('not-connected');
-  }
-  
-  console.log("Sentiment analysis model loading skipped - feature disabled");
+  console.log("Sentiment analysis functionality has been removed");
   return null;
 }
 
-// Analyze text sentiment (mock)
+// Analyze text sentiment (removed)
 export async function analyzeSentiment() {
-  console.log("Sentiment analysis skipped - feature disabled");
-  return { label: 'NEUTRAL', score: 0.5 };
+  console.log("Sentiment analysis functionality has been removed");
+  return null;
 }
 
-// Analyze multiple reviews (mock)
+// Analyze multiple reviews (removed)
 export async function analyzeReviews() {
-  console.log("Review analysis skipped - feature disabled");
-  return {
-    positiveCount: 0,
-    negativeCount: 0,
-    positivePct: 50,
-    negativePct: 0,
-    neutralPct: 50,
-    averageSentiment: 0.5
-  };
+  console.log("Review analysis functionality has been removed");
+  return null;
 }
 
-// Extract key pros and cons from reviews (mock)
+// Extract key pros and cons from reviews (removed)
 export async function extractKeyInsights() {
-  console.log("Key insights extraction skipped - feature disabled");
-  return {
-    topPros: ["Feature disabled"],
-    topCons: ["Feature disabled"]
-  };
+  console.log("Key insights extraction functionality has been removed");
+  return null;
 }
