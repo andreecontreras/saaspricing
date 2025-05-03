@@ -128,7 +128,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
       // Notify popup to refresh product display
       chrome.runtime.sendMessage({
-        type: 'REFRESH_PRODUCT_DISPLAY'
+        type: 'PRODUCT_DETECTED'
       }).catch(error => {
         // Ignore error if popup is not open
         console.log('Could not notify popup, probably not open');
@@ -337,7 +337,7 @@ async function handleProductDetection(productData, tabId) {
     let alternatives = [];
     
     try {
-      // Use Apify to search for similar products
+      // Use Apify to search for similar products across multiple websites
       const scrapedData = await searchProductPrices(productData);
       console.log('Scraped data from Apify:', scrapedData);
       
@@ -352,7 +352,7 @@ async function handleProductDetection(productData, tabId) {
             price: item.price,
             image: item.image || "https://via.placeholder.com/100",
             url: item.url || "#",
-            advantage: item.price < productData.price ? "Better price" : "Alternative"
+            advantage: item.price < productData.price ? "Better price" : (item.seller ? item.seller : "Alternative")
           }));
           console.log('Generated alternatives from Apify data:', alternatives);
         }
@@ -381,7 +381,7 @@ async function handleProductDetection(productData, tabId) {
             Math.min(productData.price * 0.85, alternatives[0].price).toFixed(2) : 
             (productData.price * 0.85).toFixed(2),
           seller: alternatives && alternatives.length > 0 ? 
-            alternatives[0].title.substring(0, 15) + "..." : "BestValueStore",
+            (alternatives[0].seller || alternatives[0].title.substring(0, 15) + "...") : "BestValueStore",
           url: alternatives && alternatives.length > 0 ? alternatives[0].url : "#"
         },
         priceHistory: getPriceChartData(productData.url),
@@ -499,7 +499,8 @@ function generateMockAlternatives(productData) {
       price: (currentPrice * (Math.random() * 0.3 + 1.1)).toFixed(2),
       image: "https://via.placeholder.com/100",
       url: "#",
-      advantage: "Higher rated"
+      advantage: "Higher rated",
+      seller: "BestStore"
     },
     {
       title: "Budget Alternative",
@@ -507,7 +508,8 @@ function generateMockAlternatives(productData) {
       price: (currentPrice * (Math.random() * 0.2 + 0.7)).toFixed(2),
       image: "https://via.placeholder.com/100",
       url: "#",
-      advantage: "Best value"
+      advantage: "Best value",
+      seller: "ValueShop"
     },
     {
       title: "Popular Choice",
@@ -515,7 +517,8 @@ function generateMockAlternatives(productData) {
       price: (currentPrice * (Math.random() * 0.15 + 0.9)).toFixed(2),
       image: "https://via.placeholder.com/100",
       url: "#",
-      advantage: "Most popular"
+      advantage: "Most popular",
+      seller: "TopBrands"
     }
   ];
 }

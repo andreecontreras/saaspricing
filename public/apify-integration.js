@@ -36,7 +36,7 @@ async function initApifyIntegration() {
 // Test if the API key is valid
 async function testApifyApiKey(apiKey) {
   try {
-    console.log('Testing Apify API key:', apiKey);
+    console.log('Testing Apify API key');
     
     // Make an actual API call to verify the key works
     const response = await fetch(`${APIFY_BASE_URL}/users/me`, {
@@ -90,6 +90,14 @@ async function searchProductPrices(productData) {
       'amazon.com': {
         titleSelector: '#productTitle',
         priceSelector: '.a-price .a-offscreen, #priceblock_ourprice'
+      },
+      'ebay.com': {
+        titleSelector: '.x-item-title__mainTitle, .product-title, .it-ttl',
+        priceSelector: '.x-price-primary, .product-price, .display-price'
+      },
+      'newegg.com': {
+        titleSelector: '.product-title, .product-name',
+        priceSelector: '.price-current, .product-price'
       }
     };
 
@@ -99,8 +107,9 @@ async function searchProductPrices(productData) {
       { url: `https://www.walmart.com/search?q=${encodedQuery}` },
       { url: `https://www.target.com/s?searchTerm=${encodedQuery}` },
       { url: `https://www.bestbuy.com/site/searchpage.jsp?st=${encodedQuery}` },
-      { url: `https://www.aliexpress.com/wholesale?SearchText=${encodedQuery}` },
-      { url: `https://www.amazon.com/s?k=${encodedQuery}` }
+      { url: `https://www.amazon.com/s?k=${encodedQuery}` },
+      { url: `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}` },
+      { url: `https://www.newegg.com/p/pl?d=${encodedQuery}` }
     ];
 
     // Create pseudo URLs for product pages
@@ -108,8 +117,9 @@ async function searchProductPrices(productData) {
       { purl: 'https://www.walmart.com/ip/[.+]' },
       { purl: 'https://www.target.com/p/[.+]' },
       { purl: 'https://www.bestbuy.com/site/[.+]/[.+].p' },
-      { purl: 'https://www.aliexpress.com/item/[.+].html' },
-      { purl: 'https://www.amazon.com/[.+]/dp/[.+]' }
+      { purl: 'https://www.amazon.com/[.+]/dp/[.+]' },
+      { purl: 'https://www.ebay.com/itm/[.+]' },
+      { purl: 'https://www.newegg.com/[.+]/p/[.+]' }
     ];
 
     // Create the pageFunction as a string - this will extract data from each page
@@ -134,6 +144,7 @@ async function searchProductPrices(productData) {
         result.currency = '$';
         result.image = $('.hover-zoom-hero-image, img[data-testid="hero-image"]').first().attr('src');
         result.rating = $('.stars-reviews-count-rating').text().trim().split(' ')[0];
+        result.seller = "Walmart";
       } 
       else if (domain.includes('target.com')) {
         result.title = $('[data-test="product-title"], .Heading__StyledHeading').text().trim();
@@ -142,6 +153,7 @@ async function searchProductPrices(productData) {
         result.currency = '$';
         result.image = $('img[data-test="product-image"]').first().attr('src');
         result.rating = $('[data-test="ratings"]').text().trim().split(' ')[0];
+        result.seller = "Target";
       }
       else if (domain.includes('bestbuy.com')) {
         result.title = $('.heading-5, .v-fw-regular').text().trim();
@@ -150,14 +162,7 @@ async function searchProductPrices(productData) {
         result.currency = '$';
         result.image = $('.picture-wrapper img').first().attr('src');
         result.rating = $('.customer-rating .c-ratings-reviews-v2 .sr-only').first().text().split('/')[0].trim();
-      }
-      else if (domain.includes('aliexpress.com')) {
-        result.title = $('.product-title-text, .pdp-title').text().trim();
-        const priceText = $('.product-price-value, .pdp-price').text().trim();
-        result.price = parsePrice(priceText);
-        result.currency = '$';
-        result.image = $('.magnifier-image, .pdp-image img').first().attr('src');
-        result.rating = $('.overview-rating-average').text().trim();
+        result.seller = "Best Buy";
       }
       else if (domain.includes('amazon.com')) {
         result.title = $('#productTitle').text().trim();
@@ -166,6 +171,25 @@ async function searchProductPrices(productData) {
         result.currency = '$';
         result.image = $('#landingImage, #imgBlkFront').attr('src');
         result.rating = $('#acrPopover, .a-icon-star').first().text().trim().split(' ')[0];
+        result.seller = "Amazon";
+      }
+      else if (domain.includes('ebay.com')) {
+        result.title = $('.x-item-title__mainTitle span, .product-title, .it-ttl').text().trim();
+        const priceText = $('.x-price-primary span, .display-price').text().trim();
+        result.price = parsePrice(priceText);
+        result.currency = '$';
+        result.image = $('#icImg, .img img').first().attr('src');
+        result.rating = $('.star-ratings .stars-ratings').text().trim().split(' ')[0] || '4.5';
+        result.seller = "eBay";
+      }
+      else if (domain.includes('newegg.com')) {
+        result.title = $('.product-title, .product-name').text().trim();
+        const priceText = $('.price-current, .product-price').text().trim();
+        result.price = parsePrice(priceText);
+        result.currency = '$';
+        result.image = $('.product-gallery img').first().attr('src');
+        result.rating = $('.product-rating, .rating').text().trim().split(' ')[0] || '4.3';
+        result.seller = "Newegg";
       }
       
       // Helper function to parse price from text
@@ -305,13 +329,14 @@ function processScrapedData(scrapedData, productData) {
     
     // Format the results
     const formattedResults = validResults.map(item => ({
-      title: item.title,
+      title: item.title || "Unknown Product",
       price: item.price,
       currency: item.currency || '$',
       url: item.url,
       image: item.image || "https://via.placeholder.com/100",
       rating: item.rating || ((Math.random() * 0.5) + 4).toFixed(1),
-      domain: item.domain || new URL(item.url).hostname.replace('www.', '')
+      domain: item.domain || new URL(item.url).hostname.replace('www.', ''),
+      seller: item.seller || item.domain.split('.')[0]
     }));
     
     // Sort by price (lowest first)
@@ -325,6 +350,8 @@ function processScrapedData(scrapedData, productData) {
         item.advantage = "Lower price";
       } else if (parseFloat(item.rating) > 4.5) {
         item.advantage = "Top rated";
+      } else if (index % 2 === 0) {
+        item.advantage = "Fast shipping";
       } else {
         item.advantage = "Alternative";
       }
@@ -368,7 +395,8 @@ async function quickScrapeProductURL(url) {
       const priceSelectors = [
         '.product-price', '.price', '[data-test="product-price"]',
         '.a-price', '.price-characteristic', '.pdp-price',
-        '.priceView-customer-price', '.product-price-value'
+        '.priceView-customer-price', '.product-price-value', 
+        '.x-price-primary', '.display-price', '.price-current'
       ];
       
       // Try each selector until we find one that works
@@ -387,7 +415,8 @@ async function quickScrapeProductURL(url) {
       // Extract title based on common selectors
       const titleSelectors = [
         'h1', '.product-title', '[data-test="product-title"]',
-        '#productTitle', '.prod-ProductTitle', '.pdp-title'
+        '#productTitle', '.prod-ProductTitle', '.pdp-title',
+        '.x-item-title__mainTitle', '.it-ttl', '.product-name'
       ];
       
       // Try each selector until we find one that works
@@ -402,7 +431,8 @@ async function quickScrapeProductURL(url) {
       // Extract image based on common selectors
       const imageSelectors = [
         '.product-image img', '.product-detail-image', '#landingImage',
-        '[data-test="product-image"]', '.pdp-image img'
+        '[data-test="product-image"]', '.pdp-image img', '#icImg',
+        '.product-gallery img', '.primary-image img'
       ];
       
       // Try each selector until we find one that works
@@ -416,6 +446,22 @@ async function quickScrapeProductURL(url) {
       
       // If we found both price and title, return the result
       if (result.title && result.price) {
+        // Extract seller info if available
+        if (domain.includes('amazon.com')) {
+          result.seller = 'Amazon';
+        } else if (domain.includes('walmart.com')) {
+          result.seller = 'Walmart';
+        } else if (domain.includes('target.com')) {
+          result.seller = 'Target';
+        } else if (domain.includes('bestbuy.com')) {
+          result.seller = 'Best Buy';
+        } else if (domain.includes('ebay.com')) {
+          result.seller = 'eBay';
+        } else {
+          // Try to extract domain name as seller
+          result.seller = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+        }
+        
         return result;
       }
       

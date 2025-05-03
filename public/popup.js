@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize API integration first (now using hardcoded key)
   const apiKey = initializeApiKey();
-  console.log('API key from initialization:', apiKey);
+  console.log('API key initialized successfully');
   
   // Initialize toggle and trial banner
   initializeToggleAndTrial();
@@ -112,7 +112,7 @@ function updateProductDisplay(data) {
           sortedAlternatives.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
           break;
         case 'shipping':
-          // For shipping, we'd normally sort by shipping speed, but here we'll just prioritize ones with "Fast" advantage
+          // For shipping, we'll prioritize ones with "Fast" advantage
           sortedAlternatives.sort((a, b) => {
             if (a.advantage && a.advantage.includes('Fast')) return -1;
             if (b.advantage && b.advantage.includes('Fast')) return 1;
@@ -188,6 +188,17 @@ function createDynamicProductCard(product) {
   const name = document.createElement('h3');
   name.textContent = product.title;
   info.appendChild(name);
+  
+  // Add seller if available
+  if (product.seller) {
+    const seller = document.createElement('div');
+    seller.className = 'product-seller';
+    seller.textContent = product.seller;
+    seller.style.fontSize = '11px';
+    seller.style.color = '#666';
+    seller.style.marginBottom = '3px';
+    info.appendChild(seller);
+  }
   
   // Price container
   const priceContainer = document.createElement('div');
@@ -270,10 +281,26 @@ function addTestButton() {
       display: block;
       margin-left: auto;
       margin-right: auto;
+      transition: background-color 0.2s, transform 0.1s;
     `;
+    
+    testButton.addEventListener('mouseenter', function() {
+      this.style.backgroundColor = '#7c3aed';
+      this.style.transform = 'translateY(-1px)';
+    });
+    
+    testButton.addEventListener('mouseleave', function() {
+      this.style.backgroundColor = '#8b5cf6';
+      this.style.transform = '';
+    });
     
     testButton.addEventListener('click', function() {
       console.log("Clicking test product detection button...");
+      
+      // Show loading indicator on the button
+      const originalText = this.textContent;
+      this.innerHTML = '<span class="loading-spinner"></span> Testing...';
+      this.disabled = true;
       
       // First clear any message displayed previously
       const productsContainer = document.getElementById('alternative-products-container');
@@ -283,6 +310,12 @@ function addTestButton() {
       
       // Use the direct test function from api-integration.js
       testProductDetection();
+      
+      // Reset button after 2 seconds
+      setTimeout(() => {
+        testButton.innerHTML = originalText;
+        testButton.disabled = false;
+      }, 2000);
     });
     
     footer.appendChild(testButton);

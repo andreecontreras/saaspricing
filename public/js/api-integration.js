@@ -3,9 +3,10 @@
 
 // Initialize API key functionality
 export function initializeApiKey() {
+  // Use hardcoded API key that's stored in the code - hidden from users
   const apiKey = 'apify_api_y9gocF4ETXbAde3CoqrbjiDOYpztOQ4zcywQ';
   
-  console.log('Initializing with API key:', apiKey);
+  console.log('Initializing Scout.io with API key');
   
   // Save the API key directly without user input
   saveApiKeyInternal(apiKey);
@@ -20,7 +21,7 @@ export function initializeApiKey() {
 // Internal function to save the API key
 function saveApiKeyInternal(apiKey) {
   if (apiKey) {
-    console.log('Saving API key to storage:', apiKey);
+    console.log('Saving API key to storage');
     chrome.runtime.sendMessage({ 
       type: 'SAVE_APIFY_API_KEY', 
       apiKey: apiKey 
@@ -39,7 +40,7 @@ function saveApiKeyInternal(apiKey) {
 
 // Function to test if API key is working
 function testApiKey(apiKey) {
-  console.log('Testing API key: ' + apiKey);
+  console.log('Testing API key connection');
   chrome.runtime.sendMessage({
     type: 'TEST_APIFY_API_KEY',
     apiKey: apiKey
