@@ -215,6 +215,17 @@ function createProductCard(product) {
   price.textContent = `$${product.price}`;
   priceContainer.appendChild(price);
   
+  // Add seller information if available
+  if (product.seller) {
+    const sellerInfo = document.createElement('span');
+    sellerInfo.className = 'seller-info';
+    sellerInfo.textContent = ` from ${product.seller}`;
+    sellerInfo.style.fontSize = '12px';
+    sellerInfo.style.color = '#666';
+    sellerInfo.style.marginLeft = '5px';
+    priceContainer.appendChild(sellerInfo);
+  }
+  
   info.appendChild(priceContainer);
   
   // Tag container
@@ -253,12 +264,29 @@ function createProductCard(product) {
   
   info.appendChild(tagContainer);
   
-  // Make the card clickable
+  // Make the card clickable with a tooltip to show it's clickable
   card.style.cursor = 'pointer';
+  card.setAttribute('title', 'Click to visit product page');
   card.addEventListener('click', function() {
     if (product.url && product.url !== '#') {
+      // Log the click for analytics
+      console.log('Product clicked:', product.title, 'URL:', product.url);
+      // Open in new tab
       chrome.tabs.create({ url: product.url });
+    } else {
+      console.warn('Product has no URL or invalid URL:', product);
     }
+  });
+  
+  // Add hover effects
+  card.addEventListener('mouseenter', function() {
+    this.style.transform = 'translateY(-3px)';
+    this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+  });
+  
+  card.addEventListener('mouseleave', function() {
+    this.style.transform = '';
+    this.style.boxShadow = '';
   });
   
   card.appendChild(info);

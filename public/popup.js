@@ -248,11 +248,36 @@ function createDynamicProductCard(product) {
   
   info.appendChild(tagContainer);
   
-  // Make the card clickable
+  // Make the card clickable with visual cues
   card.style.cursor = 'pointer';
+  card.setAttribute('title', 'Click to visit product page');
+
+  // Enhanced visual feedback on hover
+  card.addEventListener('mouseenter', function() {
+    this.style.transform = 'translateY(-3px)';
+    this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    this.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+  });
+  
+  card.addEventListener('mouseleave', function() {
+    this.style.transform = '';
+    this.style.boxShadow = '';
+  });
+  
+  // Handle click event
   card.addEventListener('click', function() {
     if (product.url && product.url !== '#') {
-      chrome.tabs.create({ url: product.url });
+      // Log the click for analytics
+      console.log('Product clicked:', product.title, 'URL:', product.url);
+      
+      // Provide visual feedback for the click
+      this.style.transform = 'scale(0.98)';
+      setTimeout(() => {
+        // Open in new tab
+        chrome.tabs.create({ url: product.url });
+      }, 150);
+    } else {
+      console.warn('Product has no URL or invalid URL:', product);
     }
   });
   

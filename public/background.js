@@ -352,7 +352,8 @@ async function handleProductDetection(productData, tabId) {
             price: item.price,
             image: item.image || "https://via.placeholder.com/100",
             url: item.url || "#",
-            advantage: item.price < productData.price ? "Better price" : (item.seller ? item.seller : "Alternative")
+            seller: item.seller || item.domain.split('.')[0].charAt(0).toUpperCase() + item.domain.split('.')[0].slice(1),
+            advantage: item.advantage || (item.price < productData.price ? "Better price" : "Alternative")
           }));
           console.log('Generated alternatives from Apify data:', alternatives);
         }
@@ -498,27 +499,27 @@ function generateMockAlternatives(productData) {
       rating: (Math.random() * 1 + 4).toFixed(1),
       price: (currentPrice * (Math.random() * 0.3 + 1.1)).toFixed(2),
       image: "https://via.placeholder.com/100",
-      url: "#",
+      url: "https://amazon.com/dp/B08MVDKZ84",
       advantage: "Higher rated",
-      seller: "BestStore"
+      seller: "Amazon"
     },
     {
       title: "Budget Alternative",
       rating: (Math.random() * 0.5 + 3.8).toFixed(1),
       price: (currentPrice * (Math.random() * 0.2 + 0.7)).toFixed(2),
       image: "https://via.placeholder.com/100",
-      url: "#",
+      url: "https://walmart.com/ip/987654",
       advantage: "Best value",
-      seller: "ValueShop"
+      seller: "Walmart"
     },
     {
       title: "Popular Choice",
       rating: (Math.random() * 0.5 + 4.2).toFixed(1),
       price: (currentPrice * (Math.random() * 0.15 + 0.9)).toFixed(2),
       image: "https://via.placeholder.com/100",
-      url: "#",
+      url: "https://bestbuy.com/site/12345",
       advantage: "Most popular",
-      seller: "TopBrands"
+      seller: "Best Buy"
     }
   ];
 }

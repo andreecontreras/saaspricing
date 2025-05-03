@@ -69,7 +69,7 @@ async function searchProductPrices(productData) {
   try {
     console.log('Searching for prices with Apify:', productData.title);
     
-    // Site-specific selectors for different e-commerce websites
+    // Expanded site-specific selectors for different e-commerce websites
     const siteSelectors = {
       'walmart.com': {
         titleSelector: '[data-automation="product-title"], .prod-ProductTitle',
@@ -98,28 +98,52 @@ async function searchProductPrices(productData) {
       'newegg.com': {
         titleSelector: '.product-title, .product-name',
         priceSelector: '.price-current, .product-price'
+      },
+      'bhphotovideo.com': {
+        titleSelector: '.pProductNameContainer h1',
+        priceSelector: '.price-current, .price_FHWd6, .ypZUP'
+      },
+      'costco.com': {
+        titleSelector: '.product-h1-container h1',
+        priceSelector: '.price, .value, .your-price'
+      },
+      'overstock.com': {
+        titleSelector: '.product-title h1',
+        priceSelector: '.monetary-price-value'
       }
     };
 
     // Generate start URLs based on the product title for different sites
-    const encodedQuery = encodeURIComponent(productData.title);
+    // Cleanse product title to avoid search issues
+    const cleansedTitle = productData.title
+      .replace(/[^\w\s]/gi, '')  // Remove special characters
+      .replace(/\s+/g, ' ')      // Replace multiple spaces with single space
+      .trim();                   // Trim whitespace
+    
+    const encodedQuery = encodeURIComponent(cleansedTitle);
     const startUrls = [
       { url: `https://www.walmart.com/search?q=${encodedQuery}` },
       { url: `https://www.target.com/s?searchTerm=${encodedQuery}` },
       { url: `https://www.bestbuy.com/site/searchpage.jsp?st=${encodedQuery}` },
       { url: `https://www.amazon.com/s?k=${encodedQuery}` },
       { url: `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}` },
-      { url: `https://www.newegg.com/p/pl?d=${encodedQuery}` }
+      { url: `https://www.newegg.com/p/pl?d=${encodedQuery}` },
+      { url: `https://www.bhphotovideo.com/c/search?q=${encodedQuery}` },
+      { url: `https://www.costco.com/CatalogSearch?keyword=${encodedQuery}` },
+      { url: `https://www.overstock.com/search?keywords=${encodedQuery}` }
     ];
 
-    // Create pseudo URLs for product pages
+    // Create pseudo URLs for product pages - these patterns help the crawler identify product pages
     const pseudoUrls = [
       { purl: 'https://www.walmart.com/ip/[.+]' },
       { purl: 'https://www.target.com/p/[.+]' },
       { purl: 'https://www.bestbuy.com/site/[.+]/[.+].p' },
       { purl: 'https://www.amazon.com/[.+]/dp/[.+]' },
       { purl: 'https://www.ebay.com/itm/[.+]' },
-      { purl: 'https://www.newegg.com/[.+]/p/[.+]' }
+      { purl: 'https://www.newegg.com/[.+]/p/[.+]' },
+      { purl: 'https://www.bhphotovideo.com/c/product/[.+]' },
+      { purl: 'https://www.costco.com/[.+].product.[.+].html' },
+      { purl: 'https://www.overstock.com/[.+]/[.+]/[.+].html' }
     ];
 
     // Create the pageFunction as a string - this will extract data from each page
@@ -191,6 +215,33 @@ async function searchProductPrices(productData) {
         result.rating = $('.product-rating, .rating').text().trim().split(' ')[0] || '4.3';
         result.seller = "Newegg";
       }
+      else if (domain.includes('bhphotovideo.com')) {
+        result.title = $('.pProductNameContainer h1').text().trim();
+        const priceText = $('.price_FHWd6, .ypZUP').text().trim();
+        result.price = parsePrice(priceText);
+        result.currency = '$';
+        result.image = $('.pProductImage img').first().attr('src');
+        result.rating = $('.starRating').text().trim().split('/')[0] || '4.4';
+        result.seller = "B&H Photo";
+      }
+      else if (domain.includes('costco.com')) {
+        result.title = $('.product-h1-container h1').text().trim();
+        const priceText = $('.price, .value, .your-price').text().trim();
+        result.price = parsePrice(priceText);
+        result.currency = '$';
+        result.image = $('#initialProductImage').attr('src');
+        result.rating = $('.customer-review-summary .avg-rating').text().trim() || '4.6';
+        result.seller = "Costco";
+      }
+      else if (domain.includes('overstock.com')) {
+        result.title = $('.product-title h1').text().trim();
+        const priceText = $('.monetary-price-value').text().trim();
+        result.price = parsePrice(priceText);
+        result.currency = '$';
+        result.image = $('.photo-center img').first().attr('src');
+        result.rating = $('.stars').attr('title') || '4.2';
+        result.seller = "Overstock";
+      }
       
       // Helper function to parse price from text
       function parsePrice(text) {
@@ -211,6 +262,7 @@ async function searchProductPrices(productData) {
     }`;
 
     // Call the Apify API to run a web scraping task
+    console.log('Initiating Apify web scraping with multiple sources');
     const response = await fetch(`${APIFY_BASE_URL}/acts/apify~web-scraper/runs`, {
       method: 'POST',
       headers: {
@@ -339,15 +391,33 @@ function processScrapedData(scrapedData, productData) {
       seller: item.seller || item.domain.split('.')[0]
     }));
     
-    // Sort by price (lowest first)
-    formattedResults.sort((a, b) => a.price - b.price);
+    // Filter for similar products by comparing titles
+    // This uses basic fuzzy matching - comparing normalized words in titles
+    const originalWords = productData.title.toLowerCase().split(/\s+/).filter(w => w.length > 3);
     
-    // Add advantage tags
-    formattedResults.forEach((item, index) => {
+    const similarProducts = formattedResults.filter(product => {
+      const productWords = product.title.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      // Count how many significant words match
+      const matchingWords = originalWords.filter(word => 
+        productWords.some(pWord => pWord.includes(word) || word.includes(pWord))
+      ).length;
+      // Consider it a match if at least 40% of significant words match
+      return matchingWords >= Math.max(1, originalWords.length * 0.4);
+    });
+    
+    // Use similar products if found, otherwise use all products
+    const productsToUse = similarProducts.length > 0 ? similarProducts : formattedResults;
+    
+    // Sort by price (lowest first)
+    productsToUse.sort((a, b) => a.price - b.price);
+    
+    // Add advantage tags based on comparison to original product
+    productsToUse.forEach((item, index) => {
       if (index === 0) {
         item.advantage = "Best price";
       } else if (item.price < productData.price) {
-        item.advantage = "Lower price";
+        const savingsPercent = ((productData.price - item.price) / productData.price * 100).toFixed(0);
+        item.advantage = `${savingsPercent}% cheaper`;
       } else if (parseFloat(item.rating) > 4.5) {
         item.advantage = "Top rated";
       } else if (index % 2 === 0) {
@@ -358,8 +428,8 @@ function processScrapedData(scrapedData, productData) {
     });
     
     return {
-      lowestPrice: formattedResults[0],
-      allPrices: formattedResults
+      lowestPrice: productsToUse[0],
+      allPrices: productsToUse
     };
   } catch (error) {
     console.error('Error processing scraped data:', error);
@@ -470,7 +540,7 @@ async function quickScrapeProductURL(url) {
       return result;
     }`;
 
-    // Call the Apify API to run a web scraping task
+    // Call the Apify API to run a web scraping task for this specific URL
     const response = await fetch(`${APIFY_BASE_URL}/acts/apify~web-scraper/runs`, {
       method: 'POST',
       headers: {
@@ -492,11 +562,17 @@ async function quickScrapeProductURL(url) {
     const runData = await response.json();
     const runId = runData.data.id;
     
-    // Wait for the task to complete (polling with shorter timeout)
+    // Wait for the task to complete (polling with shorter timeout for single URL)
     const result = await waitForTaskCompletion(runId, 5, 2000);
     
     if (result && result.length > 0) {
-      return result[0];
+      // Once we have the product data, immediately search for alternatives
+      const productData = result[0];
+      chrome.runtime.sendMessage({
+        type: 'PRODUCT_DETECTED',
+        data: productData
+      });
+      return productData;
     }
     
     return null;
