@@ -90,27 +90,27 @@ function showNoProductsMessage() {
   }
 }
 
-// Helper function to add no products message to container
+// Helper function to add no products message to container with Lovable styling
 function addNoProductsMessageToContainer(container) {
   // Clear the container first
   container.innerHTML = '';
   
-  // Add the no products message
+  // Add the no products message with Lovable-like styling
   const initialMessage = document.createElement('div');
   initialMessage.className = 'no-products-message';
   initialMessage.innerHTML = `
     <div class="text-center py-6">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400" style="margin: 0 auto 12px; color: #94a3b8;">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
-      <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
+      <p style="color: #64748b; font-size: 14px;">Browse a product online to see similar items with better prices</p>
     </div>
   `;
   container.appendChild(initialMessage);
 }
 
-// Function to initialize Hugging Face integration status
+// Function to initialize Hugging Face integration status - Lovable style
 function initializeHuggingFace() {
   const hfStatus = document.getElementById('hf-status');
   if (hfStatus) {
@@ -122,7 +122,7 @@ function initializeHuggingFace() {
   initSentimentAnalysis();
 }
 
-// Function to initialize the toggle and trial banner
+// Function to initialize the toggle and trial banner - Lovable style
 function initializeToggleAndTrial() {
   // Get references to the toggle and trial banner elements
   const enableToggle = document.getElementById('enable-toggle');
@@ -165,9 +165,32 @@ function initializeToggleAndTrial() {
 
 // Function to apply Lovable style classes to ensure UI/UX consistency
 function applyLovableStyleClasses() {
-  // Make prioritization options look consistent with Lovable
+  // Set active option styles
+  document.querySelectorAll('.option input:checked').forEach(input => {
+    const parent = input.closest('.option');
+    if (parent) {
+      parent.classList.add('active-option');
+    }
+  });
+
+  // Add click event listeners for option selection with animation
   document.querySelectorAll('.option').forEach(option => {
-    option.style.transition = 'all 0.2s ease';
+    option.addEventListener('click', function() {
+      // Remove active class from all options in the same group
+      const name = this.querySelector('input').getAttribute('name');
+      document.querySelectorAll(`.option input[name="${name}"]`).forEach(input => {
+        input.closest('.option').classList.remove('active-option');
+      });
+      
+      // Add active class to selected option
+      this.classList.add('active-option');
+      
+      // Trigger animation
+      this.style.animation = 'none';
+      setTimeout(() => {
+        this.style.animation = 'optionSelected 0.3s ease';
+      }, 5);
+    });
   });
   
   // Fix checkbox styling
@@ -178,5 +201,18 @@ function applyLovableStyleClasses() {
   // Add smooth transitions to buttons
   document.querySelectorAll('button').forEach(button => {
     button.style.transition = 'all 0.2s ease';
+  });
+  
+  // Add subtle hover effect to cards
+  document.querySelectorAll('.product-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+      card.style.transform = 'translateY(-3px)';
+      card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+    });
+    
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+      card.style.boxShadow = '';
+    });
   });
 }

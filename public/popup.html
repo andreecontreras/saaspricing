@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="popup.css">
-  <!-- Add Inter font for consistent typography -->
+  <!-- Add Inter font for consistent typography with Lovable -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
   <!-- Inline critical CSS to ensure styles appear immediately -->
   <style>
@@ -16,6 +17,8 @@
       color: #333333;
       min-width: 360px;
       max-width: 360px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     .popup-container {
@@ -178,6 +181,7 @@
       font-weight: 600;
       font-size: 12px;
       cursor: pointer;
+      transition: background-color 0.2s;
     }
     
     .upgrade-btn:hover {
@@ -215,11 +219,12 @@
       background-color: #f1f5f9;
       border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, transform 0.2s;
     }
     
     .option:hover {
       background-color: #e2e8f0;
+      transform: translateY(-2px);
     }
     
     .option input {
@@ -282,6 +287,7 @@
       cursor: pointer;
       padding: 4px 8px;
       border-radius: 4px;
+      transition: background-color 0.2s;
     }
     
     .settings-btn:hover {
@@ -297,6 +303,7 @@
       font-size: 12px;
       color: #64748b;
       text-decoration: none;
+      transition: color 0.2s;
     }
     
     .links a:hover {
@@ -360,6 +367,27 @@
       backface-visibility: hidden;
       perspective: 1000px;
     }
+    
+    /* Added styles for Lovable-style active option */
+    .option.active-option {
+      background-color: #6366f1;
+      color: white;
+      box-shadow: 0 2px 4px rgba(99,102,241,0.3);
+    }
+
+    .option.active-option span {
+      color: white;
+    }
+
+    @keyframes optionSelected {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .option.active-option {
+      animation: optionSelected 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -414,7 +442,7 @@
             <input type="radio" name="prioritize" id="prioritize-shipping">
             <span>Shipping Speed</span>
           </label>
-          <label class="option">
+          <label class="option active-option">
             <input type="radio" name="prioritize" id="prioritize-balanced" checked>
             <span>Balanced</span>
           </label>

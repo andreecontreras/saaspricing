@@ -263,21 +263,19 @@ function extractProductData() {
   }
 }
 
-// Create and add trigger button to the page
+// Create and add trigger button to the page - Updated to match Lovable style
 function createTriggerButton(container) {
   const button = document.createElement('div');
-  button.className = 'savvy-trigger-btn';
-  button.setAttribute('title', 'Savvy Shop Whisper - Find better deals');
+  button.className = 'savvy-trigger-btn hardware-accelerated';
+  button.setAttribute('title', 'Scout.io - Find better deals');
   button.innerHTML = `
-    <div class="fixed top-1/2 right-0 z-50 -translate-y-1/2">
-      <button class="bg-savvy-purple text-white rounded-l-full w-10 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-      </button>
-    </div>
+    <button aria-label="Open Scout Assistant">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </button>
   `;
   
   document.body.appendChild(button);
@@ -285,7 +283,7 @@ function createTriggerButton(container) {
   button.addEventListener('click', toggleOverlay);
 }
 
-// Create overlay container
+// Create overlay container - Updated to match Lovable style
 function createOverlay() {
   overlayContainer = document.createElement('div');
   overlayContainer.className = 'savvy-overlay';
@@ -293,7 +291,7 @@ function createOverlay() {
   overlayContainer.style.display = 'none';
   overlayContainer.innerHTML = `
     <div class="fixed inset-0 z-50 bg-black bg-opacity-50 transition-opacity animate-fade-in" id="savvy-overlay-backdrop"></div>
-    <div class="savvy-side-panel animate-slide-in-right">
+    <div class="savvy-side-panel hardware-accelerated">
       <div class="savvy-panel-header">
         <div class="flex items-center space-x-2">
           <span class="bg-savvy-purple text-white p-1 rounded-lg">
@@ -303,17 +301,17 @@ function createOverlay() {
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
           </span>
-          <h3 class="font-bold text-lg">Savvy Shop Whisper</h3>
+          <h3 class="font-bold text-lg">Scout.io</h3>
           <span class="text-xs bg-savvy-purple/10 text-savvy-purple px-2 py-0.5 rounded-full">BETA</span>
         </div>
         <div class="flex items-center space-x-2">
-          <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" id="savvy-settings-btn">
+          <button class="p-2 hover:bg-gray-100 rounded-lg text-gray-500" id="savvy-settings-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
           </button>
-          <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" id="savvy-close-btn">
+          <button class="p-2 hover:bg-gray-100 rounded-lg text-gray-500" id="savvy-close-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -338,8 +336,8 @@ function createOverlay() {
             <!-- Content will be populated dynamically -->
           </div>
           
-          <!-- Tabs navigation -->
-          <div id="savvy-tabs" class="hidden border-b border-gray-200 dark:border-gray-700">
+          <!-- Tabs navigation - Styled like Lovable tabs -->
+          <div id="savvy-tabs" class="hidden border-b border-gray-200">
             <div class="flex space-x-4">
               <button class="savvy-tab-btn active py-2 border-b-2 border-savvy-purple font-medium text-savvy-purple" data-tab="prices">
                 Best Prices
@@ -376,13 +374,13 @@ function createOverlay() {
                 <p class="text-sm text-gray-500">Scrape product data from this page or any other URL.</p>
                 
                 <div class="flex items-center space-x-2">
-                  <button id="savvy-scrape-current" class="px-4 py-2 bg-savvy-purple text-white rounded-md text-sm font-medium hover:bg-savvy-purple-dark transition-colors">
+                  <button id="savvy-scrape-current" class="savvy-button savvy-button-primary">
                     Scrape Current Page
                   </button>
                   <div class="relative flex-grow">
-                    <input id="savvy-url-input" type="text" placeholder="Enter product URL to scrape" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
+                    <input id="savvy-url-input" type="text" placeholder="Enter product URL to scrape" class="savvy-input" />
                   </div>
-                  <button id="savvy-scrape-url" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">
+                  <button id="savvy-scrape-url" class="savvy-button savvy-button-secondary">
                     Scrape URL
                   </button>
                 </div>
@@ -406,7 +404,7 @@ function createOverlay() {
             </div>
           </div>
           
-          <!-- Trial/Premium banner -->
+          <!-- Trial/Premium banner - Lovable style -->
           <div id="savvy-subscription-banner" class="mt-4 p-4 bg-gradient-to-r from-savvy-purple to-savvy-blue rounded-lg text-white hidden">
             <!-- Content will be populated dynamically -->
           </div>
@@ -493,16 +491,35 @@ function scrapeUrl(url) {
   });
 }
 
-// Toggle overlay visibility
+// Toggle overlay visibility - Updated for smooth transitions
 function toggleOverlay() {
   isOverlayVisible = !isOverlayVisible;
   
   if (isOverlayVisible) {
     overlayContainer.style.display = 'block';
     document.body.classList.add('overflow-hidden');
+    
+    // Force a reflow to ensure animations work properly
+    void overlayContainer.offsetWidth;
   } else {
-    overlayContainer.style.display = 'none';
-    document.body.classList.remove('overflow-hidden');
+    // Add a slight delay before hiding to allow animations to complete
+    setTimeout(() => {
+      overlayContainer.style.display = 'none';
+      document.body.classList.remove('overflow-hidden');
+    }, 300);
+    
+    // Start hiding animation immediately
+    const sidePanel = overlayContainer.querySelector('.savvy-side-panel');
+    if (sidePanel) {
+      sidePanel.style.transform = 'translateX(100%)';
+      sidePanel.style.transition = 'transform 0.3s ease-out';
+    }
+    
+    const backdrop = overlayContainer.querySelector('#savvy-overlay-backdrop');
+    if (backdrop) {
+      backdrop.style.opacity = '0';
+      backdrop.style.transition = 'opacity 0.3s ease-out';
+    }
   }
 }
 
