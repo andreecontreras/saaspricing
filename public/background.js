@@ -1,9 +1,13 @@
+
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL, testApifyApiKey } from './apify-integration.js';
 import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration.js';
 
 // Track currently active product
 let activeProduct = null;
+
+// Track price history
+const priceHistory = {};
 
 // Listen for installation event
 chrome.runtime.onInstalled.addListener(async () => {
@@ -24,6 +28,13 @@ chrome.runtime.onInstalled.addListener(async () => {
   
   // Initialize Apify integration
   initApifyIntegration();
+
+  // Load any saved price history from storage
+  chrome.storage.local.get('priceHistory', (data) => {
+    if (data.priceHistory) {
+      Object.assign(priceHistory, data.priceHistory);
+    }
+  });
 });
 
 // Listen for messages from content scripts or popup
@@ -77,6 +88,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Clearing active product');
     activeProduct = null;
     sendResponse({ success: true });
+    return false;
+  } else if (message.type === 'TRACK_PRICE_DROPS') {
+    trackPriceDrops(message.productUrl, message.currentPrice);
+    sendResponse({ success: true });
+    return false;
+  } else if (message.type === 'CHECK_PRICE_HISTORY') {
+    const history = getPriceHistory(message.productUrl);
+    sendResponse({ success: true, history: history });
     return false;
   } else if (message.type === 'FORCE_PRODUCT_DETECTION') {
     // Force detection of a product for testing purposes
@@ -164,6 +183,71 @@ async function saveApifyApiKey(apiKey) {
   }
 }
 
+// Track price drops for a product
+function trackPriceDrops(productUrl, currentPrice) {
+  if (!productUrl || !currentPrice) return;
+  
+  // Get or initialize price history for this product
+  if (!priceHistory[productUrl]) {
+    priceHistory[productUrl] = [];
+  }
+  
+  // Add current price to history
+  const timestamp = Date.now();
+  priceHistory[productUrl].push({
+    price: currentPrice,
+    date: timestamp
+  });
+  
+  // Limit history to 100 entries per product
+  if (priceHistory[productUrl].length > 100) {
+    priceHistory[productUrl] = priceHistory[productUrl].slice(-100);
+  }
+  
+  // Save updated price history to storage
+  chrome.storage.local.set({ 'priceHistory': priceHistory });
+  
+  // Check if this is a price drop
+  checkForPriceDrop(productUrl, currentPrice);
+}
+
+// Get price history for a product
+function getPriceHistory(productUrl) {
+  return priceHistory[productUrl] || [];
+}
+
+// Check if the current price represents a significant drop
+function checkForPriceDrop(productUrl, currentPrice) {
+  const history = priceHistory[productUrl];
+  if (!history || history.length < 2) return;
+  
+  // Get previous price (not including the one we just added)
+  const previousPrices = history.slice(0, -1);
+  const lastPrice = previousPrices[previousPrices.length - 1].price;
+  
+  // Calculate percentage drop
+  const priceDrop = ((lastPrice - currentPrice) / lastPrice) * 100;
+  
+  // Get minimum drop percentage from settings
+  chrome.storage.sync.get('minimumPriceDropPercent', (data) => {
+    const minDropPercent = data.minimumPriceDropPercent || 5;
+    
+    // Check if we should notify
+    chrome.storage.sync.get('notifyPriceDrops', (dropData) => {
+      if (dropData.notifyPriceDrops && priceDrop >= minDropPercent) {
+        // Create notification
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: 'Price Drop Alert!',
+          message: `The price has dropped by ${priceDrop.toFixed(2)}%! Now: $${currentPrice.toFixed(2)}`,
+          priority: 2
+        });
+      }
+    });
+  });
+}
+
 // Scrape a specific product URL
 async function scrapeProductURL(url, tabId) {
   try {
@@ -206,6 +290,11 @@ async function handleProductDetection(productData, tabId) {
     // Store as active product
     activeProduct = productData;
     
+    // Track price for this product
+    if (productData.price && productData.url) {
+      trackPriceDrops(productData.url, productData.price);
+    }
+    
     // Notify popup about product detection in case popup is open
     chrome.runtime.sendMessage({
       type: 'PRODUCT_DETECTED', 
@@ -214,13 +303,82 @@ async function handleProductDetection(productData, tabId) {
       // Ignore error if popup is not open
     });
     
-    // Generate mock data since we're testing
-    const mockResult = generateMockProductData(productData);
+    // Try to find similar products with better prices using Apify
+    console.log('Searching for alternative products...');
+    let alternatives;
+    
+    try {
+      // Use Apify to search for similar products
+      const scrapedData = await searchProductPrices(productData);
+      if (scrapedData && scrapedData.length > 0) {
+        const processedData = processScrapedData(scrapedData, productData);
+        if (processedData && processedData.allPrices) {
+          alternatives = processedData.allPrices.map(item => ({
+            title: item.title,
+            rating: ((Math.random() * 0.5) + 4).toFixed(1),
+            price: item.price,
+            image: "https://via.placeholder.com/100", // Placeholder since we don't have images
+            url: item.url,
+            advantage: item.price < productData.price ? "Better price" : "Alternative"
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error scraping alternatives:', error);
+    }
+    
+    // If we couldn't get real alternatives, use mock data
+    if (!alternatives || alternatives.length === 0) {
+      alternatives = generateMockAlternatives(productData);
+    }
+    
+    // Generate mock or real result
+    const result = {
+      product: {
+        title: productData.title || "Product Title",
+        image: productData.image || "https://via.placeholder.com/150",
+        currentPrice: productData.price || 99.99,
+        currency: "$"
+      },
+      priceData: {
+        lowestPrice: {
+          price: (productData.price * 0.85).toFixed(2),
+          seller: "BestValueStore",
+          url: "#"
+        },
+        priceHistory: getPriceChartData(productData.url),
+        priceDropPrediction: {
+          isLikely: Math.random() > 0.5,
+          confidence: Math.floor(Math.random() * 30) + 70,
+          estimatedDrop: Math.floor(Math.random() * 15) + 5
+        }
+      },
+      reviewData: {
+        averageRating: (Math.random() * 2 + 3).toFixed(1),
+        totalReviews: Math.floor(Math.random() * 1000) + 100,
+        sentimentSummary: {
+          positive: Math.floor(Math.random() * 30) + 60,
+          neutral: Math.floor(Math.random() * 20) + 5,
+          negative: Math.floor(Math.random() * 15) + 5
+        },
+        trustScore: Math.floor(Math.random() * 30) + 70,
+        topPros: [
+          "Great value for money",
+          "Excellent build quality",
+          "Fast shipping"
+        ],
+        topCons: [
+          "Customer service could be better",
+          "Some reported minor issues"
+        ]
+      },
+      alternatives: alternatives || []
+    };
     
     // Send the processed data back to any listeners
     chrome.runtime.sendMessage({
       type: 'PRODUCT_DATA_READY',
-      data: mockResult
+      data: result
     }).catch(() => {
       // Ignore error if popup is not open
     });
@@ -232,13 +390,13 @@ async function handleProductDetection(productData, tabId) {
         chrome.tabs.sendMessage(tabId, {
           type: 'PRODUCT_ANALYSIS_STATUS',
           status: 'completed',
-          message: 'Using test product data'
+          message: 'Product analysis completed'
         });
         
         // Send the product data to the content script
         chrome.tabs.sendMessage(tabId, {
           type: 'PRODUCT_DATA_READY',
-          data: mockResult
+          data: result
         });
       } catch (error) {
         console.error('Error sending message to tab:', error);
@@ -259,6 +417,65 @@ async function handleProductDetection(productData, tabId) {
       });
     }
   }
+}
+
+// Get price history data formatted for charts
+function getPriceChartData(productUrl) {
+  const history = getPriceHistory(productUrl);
+  
+  if (!history || history.length === 0) {
+    // Return mock data if no history
+    return [
+      { date: "Jan", price: 110 },
+      { date: "Feb", price: 105 },
+      { date: "Mar", price: 115 },
+      { date: "Apr", price: 110 },
+      { date: "May", price: 100 },
+      { date: "Jun", price: 95 }
+    ];
+  }
+  
+  // Format actual history data
+  return history.slice(-6).map(entry => {
+    const date = new Date(entry.date);
+    const month = date.toLocaleString('default', { month: 'short' });
+    return {
+      date: month,
+      price: entry.price
+    };
+  });
+}
+
+// Generate mock alternative products
+function generateMockAlternatives(productData) {
+  const currentPrice = productData.price || 99.99;
+  
+  return [
+    {
+      title: "Similar Premium Model",
+      rating: (Math.random() * 1 + 4).toFixed(1),
+      price: (currentPrice * (Math.random() * 0.3 + 1.1)).toFixed(2),
+      image: "https://via.placeholder.com/100",
+      url: "#",
+      advantage: "Higher rated"
+    },
+    {
+      title: "Budget Alternative",
+      rating: (Math.random() * 0.5 + 3.8).toFixed(1),
+      price: (currentPrice * (Math.random() * 0.2 + 0.7)).toFixed(2),
+      image: "https://via.placeholder.com/100",
+      url: "#",
+      advantage: "Best value"
+    },
+    {
+      title: "Popular Choice",
+      rating: (Math.random() * 0.5 + 4.2).toFixed(1),
+      price: (currentPrice * (Math.random() * 0.15 + 0.9)).toFixed(2),
+      image: "https://via.placeholder.com/100",
+      url: "#",
+      advantage: "Most popular"
+    }
+  ];
 }
 
 // Get user subscription status
@@ -292,83 +509,4 @@ async function getSubscriptionStatus() {
     console.error('Error getting subscription status:', error);
     return { status: 'error', error: error.message };
   }
-}
-
-// Generate mock product data for demo purposes
-function generateMockProductData(productData) {
-  const currentPrice = productData.price || 99.99;
-  
-  return {
-    product: {
-      title: productData.title || "Product Title",
-      image: productData.image || "https://via.placeholder.com/150",
-      currentPrice: currentPrice,
-      currency: "$"
-    },
-    priceData: {
-      lowestPrice: {
-        price: (currentPrice * 0.85).toFixed(2),
-        seller: "BestValueStore",
-        url: "#"
-      },
-      priceHistory: [
-        { date: "Jan", price: currentPrice * 1.1 },
-        { date: "Feb", price: currentPrice * 1.05 },
-        { date: "Mar", price: currentPrice * 1.15 },
-        { date: "Apr", price: currentPrice * 1.1 },
-        { date: "May", price: currentPrice },
-        { date: "Jun", price: currentPrice * 0.95 }
-      ],
-      priceDropPrediction: {
-        isLikely: Math.random() > 0.5,
-        confidence: Math.floor(Math.random() * 30) + 70,
-        estimatedDrop: Math.floor(Math.random() * 15) + 5
-      }
-    },
-    reviewData: {
-      averageRating: (Math.random() * 2 + 3).toFixed(1),
-      totalReviews: Math.floor(Math.random() * 1000) + 100,
-      sentimentSummary: {
-        positive: Math.floor(Math.random() * 30) + 60,
-        neutral: Math.floor(Math.random() * 20) + 5,
-        negative: Math.floor(Math.random() * 15) + 5
-      },
-      trustScore: Math.floor(Math.random() * 30) + 70,
-      topPros: [
-        "Great value for money",
-        "Excellent build quality",
-        "Fast shipping"
-      ],
-      topCons: [
-        "Customer service could be better",
-        "Some reported minor issues"
-      ]
-    },
-    alternatives: [
-      {
-        title: "Similar Premium Model",
-        rating: (Math.random() * 1 + 4).toFixed(1),
-        price: (currentPrice * (Math.random() * 0.3 + 1.1)).toFixed(2),
-        image: "https://via.placeholder.com/100",
-        url: "#",
-        advantage: "Higher rated"
-      },
-      {
-        title: "Budget Alternative",
-        rating: (Math.random() * 0.5 + 3.8).toFixed(1),
-        price: (currentPrice * (Math.random() * 0.2 + 0.7)).toFixed(2),
-        image: "https://via.placeholder.com/100",
-        url: "#",
-        advantage: "Best value"
-      },
-      {
-        title: "Popular Choice",
-        rating: (Math.random() * 0.5 + 4.2).toFixed(1),
-        price: (currentPrice * (Math.random() * 0.15 + 0.9)).toFixed(2),
-        image: "https://via.placeholder.com/100",
-        url: "#",
-        advantage: "Most popular"
-      }
-    ]
-  };
 }

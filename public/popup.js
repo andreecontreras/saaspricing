@@ -1,5 +1,6 @@
+
 // Main popup.js file - imports and coordinates all functionality
-import { initializeApiKey, testProductDetection } from './js/api-integration.js';
+import { initializeApiKey, testProductDetection, trackPriceDrops, checkPriceHistory } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
 import { initializeDisplayOptions } from './js/display-options.js';
 import { initializeAlternativeProducts, forceShowProducts } from './js/alternative-products.js';
@@ -47,9 +48,171 @@ document.addEventListener('DOMContentLoaded', function() {
     if (message.type === 'REFRESH_PRODUCT_DISPLAY') {
       console.log("Refreshing product display");
       forceShowProducts();
+    } else if (message.type === 'PRODUCT_DATA_READY') {
+      console.log("Received product data:", message.data);
+      updateProductDisplay(message.data);
+    } else if (message.type === 'PRODUCT_DETECTED') {
+      console.log("Product detected, refreshing display");
+      // Force refresh after a short delay to ensure data is ready
+      setTimeout(() => {
+        forceShowProducts();
+      }, 100);
     }
   });
 });
+
+// Function to update the product display with real data
+function updateProductDisplay(data) {
+  if (!data) return;
+  
+  console.log("Updating product display with data:", data);
+  
+  // Get the container for alternative products
+  const productsContainer = document.getElementById('alternative-products-container');
+  if (!productsContainer) return;
+  
+  // Clear current content
+  productsContainer.innerHTML = '';
+  
+  if (data.alternatives && data.alternatives.length > 0) {
+    // Get prioritization mode
+    chrome.storage.sync.get('prioritizeBy', function(modeSetting) {
+      const mode = modeSetting.prioritizeBy || 'balanced';
+      console.log("Displaying alternatives with mode:", mode);
+      
+      // Sort alternatives based on prioritization mode
+      let sortedAlternatives = [...data.alternatives];
+      
+      switch(mode) {
+        case 'price':
+          sortedAlternatives.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+          break;
+        case 'reviews':
+          sortedAlternatives.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+          break;
+        case 'shipping':
+          // For shipping, we'd normally sort by shipping speed, but here we'll just prioritize ones with "Fast" advantage
+          sortedAlternatives.sort((a, b) => {
+            if (a.advantage && a.advantage.includes('Fast')) return -1;
+            if (b.advantage && b.advantage.includes('Fast')) return 1;
+            return 0;
+          });
+          break;
+        // balanced mode uses the default order
+      }
+      
+      // Limit to 5 alternatives
+      sortedAlternatives = sortedAlternatives.slice(0, 5);
+      
+      // Add each alternative product to the container
+      sortedAlternatives.forEach(product => {
+        const productCard = createDynamicProductCard(product);
+        productsContainer.appendChild(productCard);
+      });
+    });
+  } else {
+    // Show no alternatives message
+    const noAlternativesMsg = document.createElement('div');
+    noAlternativesMsg.className = 'no-products-message';
+    noAlternativesMsg.innerHTML = `
+      <div class="text-center py-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <p class="text-gray-500">No alternative products found for this item</p>
+      </div>
+    `;
+    productsContainer.appendChild(noAlternativesMsg);
+  }
+}
+
+// Function to create a product card from API data
+function createDynamicProductCard(product) {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  
+  // Create product image
+  const imageContainer = document.createElement('div');
+  imageContainer.className = 'product-image';
+  const image = document.createElement('img');
+  image.src = product.image || "https://via.placeholder.com/100";
+  image.alt = product.title;
+  image.onerror = function() {
+    this.src = "https://via.placeholder.com/100";
+  };
+  imageContainer.appendChild(image);
+  card.appendChild(imageContainer);
+  
+  // Create product info
+  const info = document.createElement('div');
+  info.className = 'product-info';
+  
+  // Product name
+  const name = document.createElement('h3');
+  name.textContent = product.title;
+  info.appendChild(name);
+  
+  // Price container
+  const priceContainer = document.createElement('div');
+  priceContainer.className = 'product-price';
+  
+  // Current price
+  const price = document.createElement('span');
+  price.className = 'current-price';
+  price.textContent = `$${product.price}`;
+  priceContainer.appendChild(price);
+  
+  info.appendChild(priceContainer);
+  
+  // Tag container
+  const tagContainer = document.createElement('div');
+  tagContainer.className = 'product-tags';
+  
+  // Review score if available
+  if (product.rating) {
+    const reviewTag = document.createElement('span');
+    reviewTag.className = 'product-tag review-tag';
+    reviewTag.textContent = `★ ${product.rating}`;
+    reviewTag.style.backgroundColor = '#FFC107';
+    reviewTag.style.color = '#333';
+    tagContainer.appendChild(reviewTag);
+  }
+  
+  // Advantage tag if available
+  if (product.advantage) {
+    const advantageTag = document.createElement('span');
+    advantageTag.className = 'product-tag';
+    
+    // Style tag based on advantage type
+    if (product.advantage.includes('price') || product.advantage.includes('value')) {
+      advantageTag.style.backgroundColor = '#10b981'; // Green for price advantages
+    } else if (product.advantage.includes('Fast') || product.advantage.includes('ship')) {
+      advantageTag.style.backgroundColor = '#3B82F6'; // Blue for shipping advantages
+    } else if (product.advantage.includes('rate') || product.advantage.includes('review')) {
+      advantageTag.style.backgroundColor = '#F59E0B'; // Yellow for review advantages
+    } else {
+      advantageTag.style.backgroundColor = '#8B5CF6'; // Purple for other advantages
+    }
+    
+    advantageTag.textContent = product.advantage;
+    tagContainer.appendChild(advantageTag);
+  }
+  
+  info.appendChild(tagContainer);
+  
+  // Make the card clickable
+  card.style.cursor = 'pointer';
+  card.addEventListener('click', function() {
+    if (product.url && product.url !== '#') {
+      chrome.tabs.create({ url: product.url });
+    }
+  });
+  
+  card.appendChild(info);
+  
+  return card;
+}
 
 // Function to add a test button for developer testing
 function addTestButton() {

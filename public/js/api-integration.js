@@ -63,7 +63,7 @@ export function testProductDetection() {
           // Update UI to show products
           chrome.runtime.sendMessage({type: 'REFRESH_PRODUCT_DISPLAY'});
         } else {
-          console.log("Forced product detection failed:", response);
+          console.error("Forced product detection failed:", response);
         }
       });
     } else {
@@ -72,3 +72,30 @@ export function testProductDetection() {
   });
 }
 
+// Function to trigger price drop tracking
+export function trackPriceDrops(productUrl, currentPrice) {
+  console.log('Tracking price drops for:', productUrl, 'Current price:', currentPrice);
+  
+  chrome.runtime.sendMessage({
+    type: 'TRACK_PRICE_DROPS',
+    productUrl: productUrl,
+    currentPrice: currentPrice
+  }, function(response) {
+    console.log('Price tracking response:', response);
+  });
+}
+
+// Function to check price history
+export function checkPriceHistory(productUrl) {
+  console.log('Checking price history for:', productUrl);
+  
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({
+      type: 'CHECK_PRICE_HISTORY',
+      productUrl: productUrl
+    }, function(response) {
+      console.log('Price history response:', response);
+      resolve(response);
+    });
+  });
+}

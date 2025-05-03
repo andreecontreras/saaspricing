@@ -1,7 +1,7 @@
 
 // Alternative products functionality
 
-// Define alternative products data
+// Define alternative products data (as fallback if API doesn't work)
 const alternativeProducts = [
   {
     name: "Wireless Headphones",
@@ -55,6 +55,9 @@ const alternativeProducts = [
   }
 ];
 
+// Store for real product data from API
+let realProductData = null;
+
 // Initialize Alternative Products section
 export function initializeAlternativeProducts() {
   // Check if the section already exists, if not, create it
@@ -100,6 +103,8 @@ export function initializeAlternativeProducts() {
       
       if (message.type === 'PRODUCT_DATA_READY') {
         console.log('Product data ready, showing alternatives');
+        // Store the real product data
+        realProductData = message.data;
         // Product detected, show relevant alternatives
         chrome.storage.sync.get('prioritizeBy', function(data) {
           const mode = data.prioritizeBy || 'balanced';
@@ -165,35 +170,6 @@ function showNoProductsMessage(container) {
   container.appendChild(initialMessage);
 }
 
-// Function to show product alternatives when a product is detected
-function showProductAlternatives() {
-  const productsContainer = document.getElementById('alternative-products-container');
-  if (!productsContainer) return;
-  
-  // Clear current content
-  productsContainer.innerHTML = '';
-  
-  // Get current prioritization mode
-  chrome.storage.sync.get('prioritizeBy', function(data) {
-    const mode = data.prioritizeBy || 'balanced';
-    console.log("Filtering mode:", mode);
-    
-    // Add alternative products based on mode
-    const filteredProducts = filterProductsByMode(alternativeProducts, mode);
-    console.log("Final filtered products:", filteredProducts.map(p => p.name));
-    
-    if (filteredProducts.length > 0) {
-      filteredProducts.forEach(product => {
-        const productCard = createProductCard(product);
-        productsContainer.appendChild(productCard);
-      });
-    } else {
-      // If no products match the filter, show the message
-      showNoProductsMessage(productsContainer);
-    }
-  });
-}
-
 // Function to update the visibility of the alternatives section
 export function updateAlternativesSection(show) {
   const alternativesSection = document.getElementById('alternative-products-section');
@@ -205,29 +181,54 @@ export function updateAlternativesSection(show) {
 // Function to filter products based on prioritization mode
 export function filterProductsByMode(products, mode) {
   // Define products with high reviews (4.5+ stars)
-  const highReviewProducts = products.filter(product => product.reviews >= 4.5);
-  console.log("High review products:", highReviewProducts.map(p => p.name));
+  const highReviewProducts = products.filter(product => {
+    // Account for both our mock data format and API data format
+    const reviews = product.reviews || product.rating;
+    return reviews >= 4.5;
+  });
+  console.log("High review products:", highReviewProducts.map(p => p.name || p.title));
   
   // Define products with fast shipping
-  const fastShippingProducts = products.filter(product => product.shipping === "Fast");
-  console.log("Fast shipping products:", fastShippingProducts.map(p => p.name));
+  const fastShippingProducts = products.filter(product => {
+    // Account for both our mock data format and API data format
+    return product.shipping === "Fast" || 
+           (product.advantage && product.advantage.toLowerCase().includes('fast'));
+  });
+  console.log("Fast shipping products:", fastShippingProducts.map(p => p.name || p.title));
   
   // Define products with good deals (lower prices)
-  const lowestPriceProducts = products.filter(product => product.oldPrice && (product.oldPrice - product.price) > 10);
-  console.log("Lowest price products:", lowestPriceProducts.map(p => p.name));
+  const lowestPriceProducts = products.filter(product => {
+    // Account for both our mock data format and API data format
+    return (product.oldPrice && (product.oldPrice - product.price) > 10) ||
+           (product.advantage && product.advantage.toLowerCase().includes('price') || 
+            product.advantage && product.advantage.toLowerCase().includes('value'));
+  });
+  console.log("Lowest price products:", lowestPriceProducts.map(p => p.name || p.title));
   
   // Define high quality products
-  const highQualityProducts = products.filter(product => product.quality === "High");
-  console.log("High quality products:", highQualityProducts.map(p => p.name));
+  const highQualityProducts = products.filter(product => {
+    // Account for both our mock data format and API data format
+    return product.quality === "High" || 
+           (product.advantage && product.advantage.toLowerCase().includes('quality'));
+  });
+  console.log("High quality products:", highQualityProducts.map(p => p.name || p.title));
   
   let filteredProducts;
   
   switch(mode) {
     case 'price':
       filteredProducts = lowestPriceProducts.length > 0 ? lowestPriceProducts : products;
+      // Further sort by price
+      filteredProducts.sort((a, b) => a.price - b.price);
       break;
     case 'reviews':
       filteredProducts = highReviewProducts.length > 0 ? highReviewProducts : products;
+      // Further sort by rating
+      filteredProducts.sort((a, b) => {
+        const ratingA = a.reviews || a.rating || 0;
+        const ratingB = b.reviews || b.rating || 0;
+        return ratingB - ratingA;
+      });
       break;
     case 'shipping':
       filteredProducts = fastShippingProducts.length > 0 ? fastShippingProducts : products;
@@ -242,21 +243,30 @@ export function filterProductsByMode(products, mode) {
       }
       
       if (highReviewProducts.length > 0) {
-        const reviewProduct = highReviewProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        const reviewProduct = highReviewProducts.find(p => {
+          const pName = p.name || p.title;
+          return !Array.from(combinedSet).some(item => (item.name || item.title) === pName);
+        });
         if (reviewProduct) {
           combinedSet.add(reviewProduct);
         }
       }
       
       if (lowestPriceProducts.length > 0) {
-        const priceProduct = lowestPriceProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        const priceProduct = lowestPriceProducts.find(p => {
+          const pName = p.name || p.title;
+          return !Array.from(combinedSet).some(item => (item.name || item.title) === pName);
+        });
         if (priceProduct) {
           combinedSet.add(priceProduct);
         }
       }
       
       if (highQualityProducts.length > 0) {
-        const qualityProduct = highQualityProducts.find(p => !Array.from(combinedSet).some(item => item.name === p.name));
+        const qualityProduct = highQualityProducts.find(p => {
+          const pName = p.name || p.title;
+          return !Array.from(combinedSet).some(item => (item.name || item.title) === pName);
+        });
         if (qualityProduct) {
           combinedSet.add(qualityProduct);
         }
@@ -264,19 +274,20 @@ export function filterProductsByMode(products, mode) {
       
       // If we still have room, add other products
       for (const product of products) {
-        if (combinedSet.size < 5 && !Array.from(combinedSet).some(item => item.name === product.name)) {
+        const pName = product.name || product.title;
+        if (combinedSet.size < 5 && !Array.from(combinedSet).some(item => (item.name || item.title) === pName)) {
           combinedSet.add(product);
         }
       }
       
-      console.log("Balanced filtered products:", Array.from(combinedSet).map(p => p.name));
+      console.log("Balanced filtered products:", Array.from(combinedSet).map(p => p.name || p.title));
       filteredProducts = Array.from(combinedSet);
       break;
     default:
       filteredProducts = products;
   }
   
-  console.log("Final filtered products:", filteredProducts.map(p => p.name));
+  console.log("Final filtered products:", filteredProducts.map(p => p.name || p.title));
   return filteredProducts;
 }
 
@@ -295,7 +306,29 @@ export function refreshAlternativeProducts(mode) {
   loadingIndicator.textContent = 'Loading products...';
   productsContainer.appendChild(loadingIndicator);
   
-  // Check if we have a detected product, if not show the initial message
+  // Check if we have real product data from the API
+  if (realProductData && realProductData.alternatives && realProductData.alternatives.length > 0) {
+    console.log('Using real product data with alternatives:', realProductData.alternatives.length);
+    
+    // Remove loading indicator
+    productsContainer.innerHTML = '';
+    
+    // Filter alternatives based on mode
+    const filteredAlternatives = filterProductsByMode(realProductData.alternatives, mode);
+    
+    // Display the alternatives
+    if (filteredAlternatives.length > 0) {
+      filteredAlternatives.forEach(product => {
+        const productCard = createAPIProductCard(product);
+        productsContainer.appendChild(productCard);
+      });
+    } else {
+      showNoProductsMessage(productsContainer);
+    }
+    return;
+  }
+  
+  // If no real data, fall back to checking active product and using mock data
   chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
     console.log('Checking for active product:', response);
     
@@ -324,7 +357,100 @@ export function refreshAlternativeProducts(mode) {
   });
 }
 
-// Function to create a product card
+// Function to create a product card from API data
+function createAPIProductCard(product) {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  
+  // Create product image
+  const imageContainer = document.createElement('div');
+  imageContainer.className = 'product-image';
+  const image = document.createElement('img');
+  image.src = product.image;
+  image.alt = product.title;
+  image.onerror = function() {
+    this.src = "https://via.placeholder.com/100";
+  };
+  imageContainer.appendChild(image);
+  card.appendChild(imageContainer);
+  
+  // Create product info
+  const info = document.createElement('div');
+  info.className = 'product-info';
+  
+  // Product name
+  const name = document.createElement('h3');
+  name.textContent = product.title;
+  info.appendChild(name);
+  
+  // Price container
+  const priceContainer = document.createElement('div');
+  priceContainer.className = 'product-price';
+  
+  // Current price
+  const price = document.createElement('span');
+  price.className = 'current-price';
+  price.textContent = `$${product.price}`;
+  priceContainer.appendChild(price);
+  
+  info.appendChild(priceContainer);
+  
+  // Tag container
+  const tagContainer = document.createElement('div');
+  tagContainer.className = 'product-tags';
+  
+  // Review score if available
+  if (product.rating) {
+    const reviewTag = document.createElement('span');
+    reviewTag.className = 'product-tag review-tag';
+    reviewTag.textContent = `★ ${product.rating}`;
+    reviewTag.style.backgroundColor = '#FFC107';
+    reviewTag.style.color = '#333';
+    tagContainer.appendChild(reviewTag);
+  }
+  
+  // Advantage tag if available
+  if (product.advantage) {
+    const advantageTag = document.createElement('span');
+    advantageTag.className = 'product-tag';
+    
+    // Style tag based on advantage type
+    if (product.advantage.includes('price') || product.advantage.includes('value')) {
+      advantageTag.style.backgroundColor = '#10b981'; // Green for price advantages
+    } else if (product.advantage.includes('Fast') || product.advantage.includes('ship')) {
+      advantageTag.style.backgroundColor = '#3B82F6'; // Blue for shipping advantages
+    } else if (product.advantage.includes('rate') || product.advantage.includes('review')) {
+      advantageTag.style.backgroundColor = '#F59E0B'; // Yellow for review advantages
+    } else {
+      advantageTag.style.backgroundColor = '#8B5CF6'; // Purple for other advantages
+    }
+    
+    advantageTag.textContent = product.advantage;
+    tagContainer.appendChild(advantageTag);
+  }
+  
+  // Trust badge
+  const trustBadge = document.createElement('span');
+  trustBadge.className = 'trust-badge';
+  trustBadge.textContent = 'Trust';
+  tagContainer.appendChild(trustBadge);
+  
+  info.appendChild(tagContainer);
+  
+  // Make the card clickable
+  card.style.cursor = 'pointer';
+  card.addEventListener('click', function() {
+    if (product.url && product.url !== '#') {
+      chrome.tabs.create({ url: product.url });
+    }
+  });
+  
+  card.appendChild(info);
+  
+  return card;
+}
+
+// Function to create a product card from our mock data
 function createProductCard(product) {
   const card = document.createElement('div');
   card.className = 'product-card';
@@ -557,10 +683,42 @@ export function forceShowProducts() {
   loadingIndicator.style.color = '#666';
   productsContainer.appendChild(loadingIndicator);
   
+  // Check if we have real product data from the API
+  if (realProductData && realProductData.alternatives && realProductData.alternatives.length > 0) {
+    console.log('Using real product data for forced display');
+    
+    // Get current prioritization mode
+    chrome.storage.sync.get('prioritizeBy', function(data) {
+      const mode = data.prioritizeBy || 'balanced';
+      console.log("Forcing products display with mode:", mode);
+      
+      // Remove loading indicator after a short delay to show it's working
+      setTimeout(() => {
+        // Clear container again
+        productsContainer.innerHTML = '';
+        
+        // Filter alternatives based on mode
+        const filteredAlternatives = filterProductsByMode(realProductData.alternatives, mode);
+        
+        // Display the alternatives
+        if (filteredAlternatives.length > 0) {
+          filteredAlternatives.forEach(product => {
+            const productCard = createAPIProductCard(product);
+            productsContainer.appendChild(productCard);
+          });
+        } else {
+          showNoProductsMessage(productsContainer);
+        }
+      }, 500);
+    });
+    return;
+  }
+  
+  // If no real data, fall back to mock data
   // Get current prioritization mode
   chrome.storage.sync.get('prioritizeBy', function(data) {
     const mode = data.prioritizeBy || 'balanced';
-    console.log("Forcing products display with mode:", mode);
+    console.log("Forcing mock products display with mode:", mode);
     
     // Remove loading indicator after a short delay to show it's working
     setTimeout(() => {
@@ -584,4 +742,3 @@ export function forceShowProducts() {
     }, 500);
   });
 }
-
