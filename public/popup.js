@@ -10,6 +10,9 @@ import { initSentimentAnalysis } from './js/huggingface-integration.js';
 document.addEventListener('DOMContentLoaded', function() {
   console.log("Scout.io popup loaded");
   
+  // Apply hardware acceleration class to key elements for smoother animations
+  applyHardwareAcceleration();
+  
   // Initialize API integration (now using hardcoded key)
   initializeApiKey();
   
@@ -25,13 +28,24 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize alternative products section
   initializeAlternativeProducts();
   
-  // Update Hugging Face status to disabled
+  // Initialize Hugging Face
   initializeHuggingFace();
   
   // Check for active product - this will update the UI if a product is being browsed
   console.log("Checking for active product on DOM content load...");
   checkForActiveProduct();
+  
+  // Apply Lovable style classes to ensure consistency
+  applyLovableStyleClasses();
 });
+
+// Function to apply hardware acceleration to interactive elements
+function applyHardwareAcceleration() {
+  const interactiveElements = document.querySelectorAll('.option, .checkbox, button, .product-card');
+  interactiveElements.forEach(el => {
+    el.classList.add('hardware-accelerated');
+  });
+}
 
 // Function to check if there's an active product and update the UI accordingly
 function checkForActiveProduct() {
@@ -50,44 +64,62 @@ function checkForActiveProduct() {
       });
     } else {
       console.log("No active product found, showing initial message");
-      // No product found, make sure we're showing the no products message
-      import('./js/alternative-products.js').then(module => {
-        const productsContainer = document.getElementById('alternative-products-container');
-        if (productsContainer) {
-          // This function is defined in alternative-products.js
-          const showNoProductsMessage = function(container) {
-            // Clear the container first
-            container.innerHTML = '';
-            
-            // Add the no products message
-            const initialMessage = document.createElement('div');
-            initialMessage.className = 'no-products-message';
-            initialMessage.innerHTML = `
-              <div class="text-center py-6">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
-              </div>
-            `;
-            container.appendChild(initialMessage);
-          };
-          
-          showNoProductsMessage(productsContainer);
-        }
-      });
+      showNoProductsMessage();
     }
   });
 }
 
-// Function to initialize Hugging Face integration status as disabled
+// Function to show no products message with improved UI consistency
+function showNoProductsMessage() {
+  const productsContainer = document.getElementById('alternative-products-container');
+  if (!productsContainer) {
+    const section = document.getElementById('alternative-products-section');
+    if (section) {
+      // Create container if it doesn't exist
+      const container = document.createElement('div');
+      container.id = 'alternative-products-container';
+      container.className = 'alternative-products-container';
+      section.appendChild(container);
+      
+      // Add the no products message
+      addNoProductsMessageToContainer(container);
+    }
+  } else {
+    // Container exists, just update the message
+    addNoProductsMessageToContainer(productsContainer);
+  }
+}
+
+// Helper function to add no products message to container
+function addNoProductsMessageToContainer(container) {
+  // Clear the container first
+  container.innerHTML = '';
+  
+  // Add the no products message
+  const initialMessage = document.createElement('div');
+  initialMessage.className = 'no-products-message';
+  initialMessage.innerHTML = `
+    <div class="text-center py-6">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 text-gray-400">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <p class="text-gray-500">Browse a product online to see similar items with better prices</p>
+    </div>
+  `;
+  container.appendChild(initialMessage);
+}
+
+// Function to initialize Hugging Face integration status
 function initializeHuggingFace() {
   const hfStatus = document.getElementById('hf-status');
   if (hfStatus) {
     hfStatus.textContent = 'Disabled';
     hfStatus.classList.add('not-connected');
   }
+  
+  // Initialize sentiment analysis feature
+  initSentimentAnalysis();
 }
 
 // Function to initialize the toggle and trial banner
@@ -107,7 +139,9 @@ function initializeToggleAndTrial() {
   enableToggle.addEventListener('change', function() {
     chrome.storage.sync.set({ 'isEnabled': enableToggle.checked });
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {type: "TOGGLE_OVERLAY", enabled: enableToggle.checked});
+      if (tabs && tabs[0] && tabs[0].id) {
+        chrome.tabs.sendMessage(tabs[0].id, {type: "TOGGLE_OVERLAY", enabled: enableToggle.checked});
+      }
     });
   });
 
@@ -126,5 +160,23 @@ function initializeToggleAndTrial() {
       trialBanner.style.display = 'none';
       subscriptionBadge.textContent = 'Free';
     }
+  });
+}
+
+// Function to apply Lovable style classes to ensure UI/UX consistency
+function applyLovableStyleClasses() {
+  // Make prioritization options look consistent with Lovable
+  document.querySelectorAll('.option').forEach(option => {
+    option.style.transition = 'all 0.2s ease';
+  });
+  
+  // Fix checkbox styling
+  document.querySelectorAll('.checkbox input').forEach(checkbox => {
+    checkbox.style.accentColor = '#6366f1';
+  });
+  
+  // Add smooth transitions to buttons
+  document.querySelectorAll('button').forEach(button => {
+    button.style.transition = 'all 0.2s ease';
   });
 }

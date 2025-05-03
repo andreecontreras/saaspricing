@@ -16,6 +16,13 @@
 /* Load the Inter font for our extension UI */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Base font settings to match Lovable */
+.savvy-overlay {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Hide overflow when overlay is active */
 body.overflow-hidden {
   overflow: hidden !important;
@@ -65,7 +72,7 @@ body.overflow-hidden {
   width: 100%;
 }
 
-/* Custom scrollbar for our overlay */
+/* Custom scrollbar for our overlay to match Lovable style */
 .savvy-overlay ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -135,4 +142,11 @@ body.overflow-hidden {
 .trust-low {
   background-color: rgba(239, 68, 68, 0.15);
   color: rgb(239, 68, 68);
+}
+
+/* Force hardware acceleration for smoother animations */
+.hardware-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
