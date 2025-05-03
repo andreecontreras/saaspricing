@@ -1,10 +1,8 @@
-
 // Main popup.js file - imports and coordinates all functionality
 import { initializeApiKey, testProductDetection, trackPriceDrops, checkPriceHistory } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
 import { initializeDisplayOptions } from './js/display-options.js';
 import { initializeAlternativeProducts, forceShowProducts } from './js/alternative-products.js';
-import { initSentimentAnalysis } from './js/huggingface-integration.js';
 
 // Initialize all features when popup is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -17,8 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const apiKey = initializeApiKey();
   console.log('API key initialized successfully');
   
-  // Initialize toggle and trial banner
-  initializeToggleAndTrial();
+  // Initialize toggle
+  initializeToggle();
   
   // Initialize prioritization options
   initializePrioritization();
@@ -28,9 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize alternative products section
   initializeAlternativeProducts();
-  
-  // Initialize Hugging Face
-  initializeHuggingFace();
   
   // Add test button for forcing product display
   addTestButton();
@@ -63,6 +58,33 @@ document.addEventListener('DOMContentLoaded', function() {
   // Check for product data immediately on popup open
   requestProductData();
 });
+
+// Function to initialize the toggle
+function initializeToggle() {
+  // Get reference to the toggle element
+  const enableToggle = document.getElementById('enable-toggle');
+
+  // Load saved state of the toggle
+  chrome.storage.sync.get('isEnabled', function(data) {
+    enableToggle.checked = data.isEnabled !== false; // Default to true
+  });
+
+  // Add listener to the toggle
+  enableToggle.addEventListener('change', function() {
+    chrome.storage.sync.set({ 'isEnabled': enableToggle.checked });
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs && tabs[0] && tabs[0].id) {
+        chrome.tabs.sendMessage(tabs[0].id, {type: "TOGGLE_OVERLAY", enabled: enableToggle.checked});
+      }
+    });
+  });
+  
+  // Update subscription badge
+  const subscriptionBadge = document.getElementById('subscription-badge');
+  if (subscriptionBadge) {
+    subscriptionBadge.textContent = 'Free';
+  }
+}
 
 // Function to request product data from background script
 function requestProductData() {
@@ -430,47 +452,6 @@ function initializeHuggingFace() {
   
   // Initialize sentiment analysis feature
   initSentimentAnalysis();
-}
-
-// Function to initialize the toggle and trial banner
-function initializeToggleAndTrial() {
-  // Get references to the toggle and trial banner elements
-  const enableToggle = document.getElementById('enable-toggle');
-  const trialBanner = document.getElementById('trial-banner');
-  const daysRemaining = document.getElementById('days-remaining');
-  const subscriptionBadge = document.getElementById('subscription-badge');
-
-  // Load saved state of the toggle
-  chrome.storage.sync.get('isEnabled', function(data) {
-    enableToggle.checked = data.isEnabled !== false; // Default to true
-  });
-
-  // Add listener to the toggle
-  enableToggle.addEventListener('change', function() {
-    chrome.storage.sync.set({ 'isEnabled': enableToggle.checked });
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs && tabs[0] && tabs[0].id) {
-        chrome.tabs.sendMessage(tabs[0].id, {type: "TOGGLE_OVERLAY", enabled: enableToggle.checked});
-      }
-    });
-  });
-
-  // Load and display trial information
-  chrome.storage.sync.get(['userSubscription', 'trialEndDate'], function(data) {
-    const now = new Date();
-    const trialEnd = new Date(data.trialEndDate || 0);
-
-    if (data.userSubscription === 'trial' && trialEnd > now) {
-      // Calculate days remaining
-      const timeLeft = trialEnd.getTime() - now.getTime();
-      const days = Math.ceil(timeLeft / (1000 * 3600 * 24));
-      daysRemaining.textContent = days;
-    } else {
-      // Hide the trial banner if not in trial or trial has ended
-      trialBanner.style.display = 'none';
-      subscriptionBadge.textContent = 'Free';
-    }
-  });
 }
 
 // Function to apply Lovable style classes to ensure UI/UX consistency
