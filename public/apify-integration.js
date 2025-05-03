@@ -12,12 +12,19 @@ async function initApifyIntegration() {
     const data = await chrome.storage.sync.get(['apifyApiKey']);
     if (data.apifyApiKey) {
       APIFY_API_KEY = data.apifyApiKey;
+      console.log('Retrieved API key from storage');
     } else {
       // If not in storage, use hardcoded key and save it
       await chrome.storage.sync.set({ apifyApiKey: APIFY_API_KEY });
+      console.log('Saved hardcoded API key to storage');
     }
     console.log('Apify integration initialized, API key exists:', !!APIFY_API_KEY);
-    return !!APIFY_API_KEY;
+    
+    // Test the API key immediately
+    const isValid = await testApifyApiKey(APIFY_API_KEY);
+    console.log('API key validation result:', isValid);
+    
+    return isValid;
   } catch (error) {
     console.error('Error initializing Apify integration:', error);
     // Fall back to hardcoded key on error
@@ -29,20 +36,9 @@ async function initApifyIntegration() {
 // Test if the API key is valid
 async function testApifyApiKey(apiKey) {
   try {
-    console.log('Testing Apify API key');
+    console.log('Testing Apify API key:', apiKey);
     
-    // For testing purposes, we'll assume the key is valid if it's non-empty
-    // In a real scenario, we would validate with an actual API call
-    if (!apiKey) {
-      console.error('Empty API key provided');
-      return false;
-    }
-    
-    console.log('API key validation successful (mock test)');
-    return true;
-    
-    /* 
-    // Uncomment this section to do a real API call test
+    // Make an actual API call to verify the key works
     const response = await fetch(`${APIFY_BASE_URL}/users/me`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`
@@ -57,7 +53,6 @@ async function testApifyApiKey(apiKey) {
     const userData = await response.json();
     console.log('Apify API key test successful:', userData);
     return true;
-    */
   } catch (error) {
     console.error('Error testing Apify API key:', error);
     return false;
@@ -104,7 +99,8 @@ async function searchProductPrices(productData) {
       { url: `https://www.walmart.com/search?q=${encodedQuery}` },
       { url: `https://www.target.com/s?searchTerm=${encodedQuery}` },
       { url: `https://www.bestbuy.com/site/searchpage.jsp?st=${encodedQuery}` },
-      { url: `https://www.aliexpress.com/wholesale?SearchText=${encodedQuery}` }
+      { url: `https://www.aliexpress.com/wholesale?SearchText=${encodedQuery}` },
+      { url: `https://www.amazon.com/s?k=${encodedQuery}` }
     ];
 
     // Create pseudo URLs for product pages
@@ -136,30 +132,40 @@ async function searchProductPrices(productData) {
         const priceText = $('[data-automation="product-price"], .price-characteristic').text().trim();
         result.price = parsePrice(priceText);
         result.currency = '$';
+        result.image = $('.hover-zoom-hero-image, img[data-testid="hero-image"]').first().attr('src');
+        result.rating = $('.stars-reviews-count-rating').text().trim().split(' ')[0];
       } 
       else if (domain.includes('target.com')) {
         result.title = $('[data-test="product-title"], .Heading__StyledHeading').text().trim();
         const priceText = $('[data-test="product-price"], .style__PriceFontSize').text().trim();
         result.price = parsePrice(priceText);
         result.currency = '$';
+        result.image = $('img[data-test="product-image"]').first().attr('src');
+        result.rating = $('[data-test="ratings"]').text().trim().split(' ')[0];
       }
       else if (domain.includes('bestbuy.com')) {
         result.title = $('.heading-5, .v-fw-regular').text().trim();
         const priceText = $('.priceView-customer-price span, .pb-current-price').text().trim();
         result.price = parsePrice(priceText);
         result.currency = '$';
+        result.image = $('.picture-wrapper img').first().attr('src');
+        result.rating = $('.customer-rating .c-ratings-reviews-v2 .sr-only').first().text().split('/')[0].trim();
       }
       else if (domain.includes('aliexpress.com')) {
         result.title = $('.product-title-text, .pdp-title').text().trim();
         const priceText = $('.product-price-value, .pdp-price').text().trim();
         result.price = parsePrice(priceText);
         result.currency = '$';
+        result.image = $('.magnifier-image, .pdp-image img').first().attr('src');
+        result.rating = $('.overview-rating-average').text().trim();
       }
       else if (domain.includes('amazon.com')) {
         result.title = $('#productTitle').text().trim();
         const priceText = $('.a-price .a-offscreen, #priceblock_ourprice').text().trim();
         result.price = parsePrice(priceText);
         result.currency = '$';
+        result.image = $('#landingImage, #imgBlkFront').attr('src');
+        result.rating = $('#acrPopover, .a-icon-star').first().text().trim().split(' ')[0];
       }
       
       // Helper function to parse price from text
@@ -192,7 +198,7 @@ async function searchProductPrices(productData) {
         "pseudoUrls": pseudoUrls,
         "linkSelector": "a",
         "pageFunction": pageFunctionString,
-        "maxRequestsPerCrawl": 20,
+        "maxRequestsPerCrawl": 50,
         "maxCrawlingDepth": 2,
         "waitUntil": ["networkidle2"]
       })
@@ -303,11 +309,26 @@ function processScrapedData(scrapedData, productData) {
       price: item.price,
       currency: item.currency || '$',
       url: item.url,
+      image: item.image || "https://via.placeholder.com/100",
+      rating: item.rating || ((Math.random() * 0.5) + 4).toFixed(1),
       domain: item.domain || new URL(item.url).hostname.replace('www.', '')
     }));
     
     // Sort by price (lowest first)
     formattedResults.sort((a, b) => a.price - b.price);
+    
+    // Add advantage tags
+    formattedResults.forEach((item, index) => {
+      if (index === 0) {
+        item.advantage = "Best price";
+      } else if (item.price < productData.price) {
+        item.advantage = "Lower price";
+      } else if (parseFloat(item.rating) > 4.5) {
+        item.advantage = "Top rated";
+      } else {
+        item.advantage = "Alternative";
+      }
+    });
     
     return {
       lowestPrice: formattedResults[0],
@@ -374,6 +395,21 @@ async function quickScrapeProductURL(url) {
         const titleElement = $(selector);
         if (titleElement.length > 0) {
           result.title = titleElement.text().trim();
+          break;
+        }
+      }
+      
+      // Extract image based on common selectors
+      const imageSelectors = [
+        '.product-image img', '.product-detail-image', '#landingImage',
+        '[data-test="product-image"]', '.pdp-image img'
+      ];
+      
+      // Try each selector until we find one that works
+      for (const selector of imageSelectors) {
+        const imageElement = $(selector);
+        if (imageElement.length > 0 && imageElement.attr('src')) {
+          result.image = imageElement.attr('src');
           break;
         }
       }

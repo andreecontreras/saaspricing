@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Force refresh after a short delay to ensure data is ready
       setTimeout(() => {
         forceShowProducts();
-      }, 100);
+      }, 300);
     }
   });
   
@@ -87,7 +87,10 @@ function updateProductDisplay(data) {
   
   // Get the container for alternative products
   const productsContainer = document.getElementById('alternative-products-container');
-  if (!productsContainer) return;
+  if (!productsContainer) {
+    console.error('Products container not found');
+    return;
+  }
   
   // Clear current content
   productsContainer.innerHTML = '';
@@ -122,11 +125,26 @@ function updateProductDisplay(data) {
       // Limit to 5 alternatives
       sortedAlternatives = sortedAlternatives.slice(0, 5);
       
+      console.log("Displaying sorted alternatives:", sortedAlternatives);
+      
       // Add each alternative product to the container
       sortedAlternatives.forEach(product => {
         const productCard = createDynamicProductCard(product);
         productsContainer.appendChild(productCard);
       });
+      
+      // Add price information if available
+      if (data.priceData && data.priceData.lowestPrice) {
+        const priceSummary = document.createElement('div');
+        priceSummary.className = 'price-summary';
+        priceSummary.innerHTML = `
+          <div class="text-center mt-3 p-3 bg-green-50 rounded-md border border-green-200">
+            <p class="text-green-700 font-medium">Lowest price found: $${data.priceData.lowestPrice.price}</p>
+            <p class="text-green-600 text-sm">at ${data.priceData.lowestPrice.seller}</p>
+          </div>
+        `;
+        productsContainer.appendChild(priceSummary);
+      }
     });
   } else {
     // Show no alternatives message
@@ -249,6 +267,9 @@ function addTestButton() {
       margin-top: 10px;
       cursor: pointer;
       font-size: 12px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
     `;
     
     testButton.addEventListener('click', function() {
@@ -341,7 +362,7 @@ function addNoProductsMessageToContainer(container) {
   container.appendChild(initialMessage);
 }
 
-// Function to initialize Hugging Face integration status - Lovable style
+// Function to initialize Hugging Face integration status
 function initializeHuggingFace() {
   const hfStatus = document.getElementById('hf-status');
   if (hfStatus) {
@@ -353,7 +374,7 @@ function initializeHuggingFace() {
   initSentimentAnalysis();
 }
 
-// Function to initialize the toggle and trial banner - Lovable style
+// Function to initialize the toggle and trial banner
 function initializeToggleAndTrial() {
   // Get references to the toggle and trial banner elements
   const enableToggle = document.getElementById('enable-toggle');

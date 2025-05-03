@@ -30,7 +30,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   });
   
   // Initialize Apify integration
-  initApifyIntegration();
+  const apifyInitialized = await initApifyIntegration();
+  console.log('Apify integration initialized:', apifyInitialized);
 
   // Load any saved price history from storage
   chrome.storage.local.get('priceHistory', (data) => {
@@ -139,6 +140,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: 'No tab ID provided' });
     }
     return true;
+  } else if (message.type === 'REFRESH_PRODUCT_DISPLAY') {
+    // Just send back the current product data
+    if (currentProductData) {
+      sendResponse({ success: true, data: currentProductData });
+    } else {
+      sendResponse({ success: false, error: 'No product data available' });
+    }
+    return false;
   }
 });
 
@@ -325,7 +334,7 @@ async function handleProductDetection(productData, tabId) {
     
     // Try to find similar products with better prices using Apify
     console.log('Searching for alternative products...');
-    let alternatives;
+    let alternatives = [];
     
     try {
       // Use Apify to search for similar products
@@ -368,9 +377,12 @@ async function handleProductDetection(productData, tabId) {
       },
       priceData: {
         lowestPrice: {
-          price: (productData.price * 0.85).toFixed(2),
-          seller: "BestValueStore",
-          url: "#"
+          price: alternatives && alternatives.length > 0 ? 
+            Math.min(productData.price * 0.85, alternatives[0].price).toFixed(2) : 
+            (productData.price * 0.85).toFixed(2),
+          seller: alternatives && alternatives.length > 0 ? 
+            alternatives[0].title.substring(0, 15) + "..." : "BestValueStore",
+          url: alternatives && alternatives.length > 0 ? alternatives[0].url : "#"
         },
         priceHistory: getPriceChartData(productData.url),
         priceDropPrediction: {

@@ -5,14 +5,10 @@
 export function initializeApiKey() {
   const apiKey = 'apify_api_y9gocF4ETXbAde3CoqrbjiDOYpztOQ4zcywQ';
   
-  // Log that we're initializing with the hardcoded API key
   console.log('Initializing with API key:', apiKey);
   
   // Save the API key directly without user input
   saveApiKeyInternal(apiKey);
-  
-  // Log that we've set the API key
-  console.log('API key initialized with hardcoded value');
   
   // Test the key immediately after initialization
   testApiKey(apiKey);
@@ -49,6 +45,15 @@ function testApiKey(apiKey) {
     apiKey: apiKey
   }, function(response) {
     console.log('API key test result:', response ? response.success : 'No response');
+    if (response && response.success) {
+      // If successful, refresh product display to show products immediately
+      chrome.runtime.sendMessage({type: 'REFRESH_PRODUCT_DISPLAY'});
+      
+      // Force a product detection since we know the API key is working
+      setTimeout(() => {
+        testProductDetection();
+      }, 500);
+    }
   });
 }
 
