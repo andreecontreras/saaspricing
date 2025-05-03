@@ -1,4 +1,3 @@
-
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL, testApifyApiKey } from './apify-integration.js';
 import { analyzeReviews, extractKeyInsights } from './js/huggingface-integration.js';
@@ -20,7 +19,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     minimumPriceDropPercent: 5, // Notify only for 5% or more price drop
     userSubscription: 'trial', // 'trial', 'free', 'premium'
     trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7-day trial
-    apifyApiKey: '' // Initialize empty Apify API key
+    apifyApiKey: 'apify_api_y9gocF4ETXbAde3CoqrbjiDOYpztOQ4zcywQ' // Initialize with hardcoded API key
   });
   
   // Initialize Apify integration
@@ -48,9 +47,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     saveApifyApiKey(message.apiKey).then(sendResponse);
     return true; // Keep the messaging channel open for async response
   } else if (message.type === 'TEST_APIFY_API_KEY') {
+    console.log('Testing Apify API key:', message.apiKey);
     testApifyApiKey(message.apiKey)
-      .then(result => sendResponse({ success: result }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
+      .then(result => {
+        console.log('API key test result:', result);
+        sendResponse({ success: result });
+      })
+      .catch(error => {
+        console.error('API key test error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
     return true; // Keep messaging channel open
   } else if (message.type === 'SCRAPE_PRODUCT_URL') {
     scrapeProductURL(message.url, sender.tab.id)
@@ -74,17 +80,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   } else if (message.type === 'FORCE_PRODUCT_DETECTION') {
     // Force detection of a product for testing purposes
+    console.log('Force product detection received');
+    
     const mockProduct = {
-      title: "Test Product",
+      title: "Test Product - Premium Wireless Headphones",
       price: 99.99,
-      image: "https://via.placeholder.com/150",
-      url: "https://example.com/product"
+      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=320&q=80",
+      url: "https://example.com/product/wireless-headphones"
     };
     
     console.log('Forcing product detection:', mockProduct);
     activeProduct = mockProduct;
-    handleProductDetection(mockProduct, sender.tab.id);
-    sendResponse({ success: true });
+    
+    // Handle the product detection with the active tab
+    const tabId = message.tabId || (sender.tab && sender.tab.id);
+    if (tabId) {
+      handleProductDetection(mockProduct, tabId);
+      
+      // Notify popup to refresh product display
+      chrome.runtime.sendMessage({
+        type: 'REFRESH_PRODUCT_DISPLAY'
+      }).catch(error => {
+        // Ignore error if popup is not open
+        console.log('Could not notify popup, probably not open');
+      });
+      
+      sendResponse({ success: true });
+    } else {
+      console.error('No tab ID provided for forced product detection');
+      sendResponse({ success: false, error: 'No tab ID provided' });
+    }
     return true;
   }
 });
@@ -189,95 +214,50 @@ async function handleProductDetection(productData, tabId) {
       // Ignore error if popup is not open
     });
     
-    // Notify content script that product analysis has started
-    chrome.tabs.sendMessage(tabId, {
-      type: 'PRODUCT_ANALYSIS_STATUS',
-      status: 'started',
-      message: 'Analyzing product across multiple stores...'
+    // Generate mock data since we're testing
+    const mockResult = generateMockProductData(productData);
+    
+    // Send the processed data back to any listeners
+    chrome.runtime.sendMessage({
+      type: 'PRODUCT_DATA_READY',
+      data: mockResult
+    }).catch(() => {
+      // Ignore error if popup is not open
     });
     
-    // Use Apify to search for product prices
-    const scrapedData = await searchProductPrices(productData);
-    let processedData = null;
-    
-    if (scrapedData) {
-      processedData = processScrapedData(scrapedData, productData);
-    }
-    
-    // If we got real data from Apify, use it; otherwise, use mock data
-    const mockResult = generateMockProductData(productData);
-    let finalResult = {...mockResult};
-    
-    // Replace mock price data with real data if available
-    if (processedData && processedData.lowestPrice) {
-      finalResult.priceData.lowestPrice = processedData.lowestPrice;
-      finalResult.priceData.allPrices = processedData.allPrices || [processedData.lowestPrice];
-      
-      // Update price history to show some realistic variation
-      const lowestPrice = processedData.lowestPrice.price;
-      finalResult.priceData.priceHistory = [
-        { date: "Jan", price: lowestPrice * 1.1 },
-        { date: "Feb", price: lowestPrice * 1.05 },
-        { date: "Mar", price: lowestPrice * 1.15 },
-        { date: "Apr", price: lowestPrice * 1.1 },
-        { date: "May", price: lowestPrice },
-        { date: "Jun", price: lowestPrice * 0.95 }
-      ];
-    }
-    
-    // If we have product reviews, analyze them with mock data
-    if (productData.reviews && productData.reviews.length > 0) {
+    // If we have a tab ID, notify that content script as well
+    if (tabId) {
       try {
+        // Notify content script that product analysis has completed
         chrome.tabs.sendMessage(tabId, {
           type: 'PRODUCT_ANALYSIS_STATUS',
-          status: 'progress',
-          message: 'Analyzing product reviews with AI...'
+          status: 'completed',
+          message: 'Using test product data'
         });
         
-        const reviewAnalysis = await analyzeProductReviews(productData.reviews);
-        
-        // Update sentiment summary
-        if (reviewAnalysis.sentimentAnalysis) {
-          finalResult.reviewData.sentimentSummary = {
-            positive: reviewAnalysis.sentimentAnalysis.positivePct,
-            neutral: reviewAnalysis.sentimentAnalysis.neutralPct,
-            negative: reviewAnalysis.sentimentAnalysis.negativePct
-          };
-        }
-        
-        // Update pros and cons
-        if (reviewAnalysis.keyInsights) {
-          finalResult.reviewData.topPros = reviewAnalysis.keyInsights.topPros;
-          finalResult.reviewData.topCons = reviewAnalysis.keyInsights.topCons;
-        }
+        // Send the product data to the content script
+        chrome.tabs.sendMessage(tabId, {
+          type: 'PRODUCT_DATA_READY',
+          data: mockResult
+        });
       } catch (error) {
-        console.error('Error in AI review analysis:', error);
-        // Continue with mock data for reviews if AI analysis fails
+        console.error('Error sending message to tab:', error);
       }
     }
-    
-    // Notify content script of completion status
-    chrome.tabs.sendMessage(tabId, {
-      type: 'PRODUCT_ANALYSIS_STATUS',
-      status: 'completed',
-      message: processedData ? 'Found price data and analyzed reviews' : 'Using estimated data'
-    });
-    
-    // Send the processed data back to the content script
-    chrome.tabs.sendMessage(tabId, {
-      type: 'PRODUCT_DATA_READY',
-      data: finalResult
-    });
     
   } catch (error) {
     console.error('Error handling product detection:', error);
     
-    // Notify content script of error
-    chrome.tabs.sendMessage(tabId, {
-      type: 'PRODUCT_ANALYSIS_STATUS',
-      status: 'error',
-      message: `Error: ${error.message}`
-    });
+    if (tabId) {
+      // Notify content script of error
+      chrome.tabs.sendMessage(tabId, {
+        type: 'PRODUCT_ANALYSIS_STATUS',
+        status: 'error',
+        message: `Error: ${error.message}`
+      }).catch(() => {
+        // Ignore error if content script is not ready
+      });
+    }
   }
 }
 

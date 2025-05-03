@@ -1,5 +1,5 @@
 // Main popup.js file - imports and coordinates all functionality
-import { initializeApiKey } from './js/api-integration.js';
+import { initializeApiKey, testProductDetection } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
 import { initializeDisplayOptions } from './js/display-options.js';
 import { initializeAlternativeProducts, forceShowProducts } from './js/alternative-products.js';
@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
   applyHardwareAcceleration();
   
   // Initialize API integration (now using hardcoded key)
-  initializeApiKey();
+  const apiKey = initializeApiKey();
+  console.log('API key from initialization:', apiKey);
   
   // Initialize toggle and trial banner
   initializeToggleAndTrial();
@@ -39,6 +40,15 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Apply Lovable style classes to ensure consistency
   applyLovableStyleClasses();
+  
+  // Listen for messages from the background script
+  chrome.runtime.onMessage.addListener(function(message) {
+    console.log("Popup received message:", message.type);
+    if (message.type === 'REFRESH_PRODUCT_DISPLAY') {
+      console.log("Refreshing product display");
+      forceShowProducts();
+    }
+  });
 });
 
 // Function to add a test button for developer testing
@@ -61,23 +71,16 @@ function addTestButton() {
     `;
     
     testButton.addEventListener('click', function() {
-      console.log("Testing product detection...");
-      // First try to send message to active tab
-      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        if (tabs && tabs[0] && tabs[0].id) {
-          chrome.runtime.sendMessage({
-            type: 'FORCE_PRODUCT_DETECTION',
-            tabId: tabs[0].id
-          }, function(response) {
-            if (response && response.success) {
-              console.log("Forced product detection successful");
-              forceShowProducts();
-            } else {
-              console.log("Forced product detection response:", response);
-            }
-          });
-        }
-      });
+      console.log("Clicking test product detection button...");
+      
+      // First clear any message displayed previously
+      const productsContainer = document.getElementById('alternative-products-container');
+      if (productsContainer) {
+        productsContainer.innerHTML = '<div class="loading-message">Testing product detection...</div>';
+      }
+      
+      // Use the direct test function from api-integration.js
+      testProductDetection();
     });
     
     footer.appendChild(testButton);

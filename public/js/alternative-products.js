@@ -1,3 +1,4 @@
+
 // Alternative products functionality
 
 // Define alternative products data
@@ -6,7 +7,7 @@ const alternativeProducts = [
     name: "Wireless Headphones",
     price: 39.99,
     oldPrice: 64.99,
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=320&q=80",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=320&q=80",
     tag: "Deal!",
     reviews: 4.7,
     shipping: "Fast",
@@ -95,16 +96,33 @@ export function initializeAlternativeProducts() {
     
     // Add event listener for product detection message from the background script
     chrome.runtime.onMessage.addListener(function(message) {
-      if (message.type === 'PRODUCT_DATA_READY' || message.type === 'PRODUCT_DETECTED') {
-        console.log('Product detected, showing alternatives');
+      console.log('Alternative products received message:', message.type);
+      
+      if (message.type === 'PRODUCT_DATA_READY') {
+        console.log('Product data ready, showing alternatives');
         // Product detected, show relevant alternatives
-        const mode = localStorage.getItem('prioritizeBy') || 'balanced';
-        refreshAlternativeProducts(mode);
+        chrome.storage.sync.get('prioritizeBy', function(data) {
+          const mode = data.prioritizeBy || 'balanced';
+          refreshAlternativeProducts(mode);
+        });
+      }
+      else if (message.type === 'PRODUCT_DETECTED') {
+        console.log('Product detected, refreshing alternatives');
+        // Product detected, show relevant alternatives
+        chrome.storage.sync.get('prioritizeBy', function(data) {
+          const mode = data.prioritizeBy || 'balanced';
+          refreshAlternativeProducts(mode);
+        });
+      }
+      else if (message.type === 'REFRESH_PRODUCT_DISPLAY') {
+        console.log('Refreshing product display from message');
+        forceShowProducts();
       }
     });
     
     // Check if we already have an active product when popup opens
     chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
+      console.log('Active product check response:', response);
       if (response && response.hasActiveProduct) {
         console.log('Active product found on popup open, showing alternatives');
         // Product already detected, show relevant alternatives
@@ -113,6 +131,7 @@ export function initializeAlternativeProducts() {
           refreshAlternativeProducts(mode);
         });
       } else {
+        console.log("No active product found, showing initial message");
         // Make sure we show the "no products" message
         const productsContainer = document.getElementById('alternative-products-container');
         if (productsContainer) {
@@ -263,15 +282,25 @@ export function filterProductsByMode(products, mode) {
 
 // Function to refresh alternative products based on prioritization mode
 export function refreshAlternativeProducts(mode) {
+  console.log('Refreshing alternative products with mode:', mode);
   const productsContainer = document.getElementById('alternative-products-container');
   if (!productsContainer) return;
   
   // Clear current products
   productsContainer.innerHTML = '';
   
+  // Add a loading indicator
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.className = 'loading-indicator';
+  loadingIndicator.textContent = 'Loading products...';
+  productsContainer.appendChild(loadingIndicator);
+  
   // Check if we have a detected product, if not show the initial message
   chrome.runtime.sendMessage({type: 'CHECK_ACTIVE_PRODUCT'}, function(response) {
     console.log('Checking for active product:', response);
+    
+    // Remove loading indicator
+    productsContainer.innerHTML = '';
     
     if (response && response.hasActiveProduct) {
       console.log('Active product confirmed, showing alternatives');
@@ -509,28 +538,50 @@ function addAlternativeProductsStyles() {
 
 // Export function to force refresh products (for testing)
 export function forceShowProducts() {
+  console.log('Force showing products');
   const productsContainer = document.getElementById('alternative-products-container');
-  if (!productsContainer) return;
+  if (!productsContainer) {
+    console.error('Products container not found');
+    return;
+  }
   
   // Clear current products
   productsContainer.innerHTML = '';
+  
+  // Add loading indicator
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.className = 'loading-indicator';
+  loadingIndicator.textContent = 'Loading product alternatives...';
+  loadingIndicator.style.textAlign = 'center';
+  loadingIndicator.style.padding = '20px';
+  loadingIndicator.style.color = '#666';
+  productsContainer.appendChild(loadingIndicator);
   
   // Get current prioritization mode
   chrome.storage.sync.get('prioritizeBy', function(data) {
     const mode = data.prioritizeBy || 'balanced';
     console.log("Forcing products display with mode:", mode);
     
-    // Filter products based on mode
-    const filteredProducts = filterProductsByMode(alternativeProducts, mode);
-    
-    // Add filtered products
-    if (filteredProducts.length > 0) {
-      filteredProducts.forEach(product => {
-        const productCard = createProductCard(product);
-        productsContainer.appendChild(productCard);
-      });
-    } else {
-      showNoProductsMessage(productsContainer);
-    }
+    // Remove loading indicator after a short delay to show it's working
+    setTimeout(() => {
+      // Clear container again
+      productsContainer.innerHTML = '';
+      
+      // Filter products based on mode
+      const filteredProducts = filterProductsByMode(alternativeProducts, mode);
+      
+      // Add filtered products
+      if (filteredProducts.length > 0) {
+        console.log('Adding filtered products:', filteredProducts.length);
+        filteredProducts.forEach(product => {
+          const productCard = createProductCard(product);
+          productsContainer.appendChild(productCard);
+        });
+      } else {
+        console.log('No filtered products to show');
+        showNoProductsMessage(productsContainer);
+      }
+    }, 500);
   });
 }
+
