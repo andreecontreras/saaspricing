@@ -1,4 +1,3 @@
-
 // Content script for Savvy Shop Whisper Chrome Extension
 
 // Global state
@@ -270,8 +269,8 @@ function createTriggerButton(container) {
   button.className = 'savvy-trigger-btn';
   button.setAttribute('title', 'Savvy Shop Whisper - Find better deals');
   button.innerHTML = `
-    <div class="fixed bottom-6 right-6 z-50 flex items-center justify-center">
-      <button class="bg-savvy-purple text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-shadow">
+    <div class="fixed top-1/2 right-0 z-50 -translate-y-1/2">
+      <button class="bg-savvy-purple text-white rounded-l-full w-10 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
@@ -293,125 +292,123 @@ function createOverlay() {
   overlayContainer.setAttribute('aria-hidden', 'true');
   overlayContainer.style.display = 'none';
   overlayContainer.innerHTML = `
-    <div class="fixed inset-0 z-50 bg-black bg-opacity-50 transition-opacity" id="savvy-overlay-backdrop"></div>
-    <div class="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 sm:p-6 md:p-8 animate-slide-in">
-      <div class="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <span class="bg-savvy-purple text-white p-1 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </span>
-            <h3 class="font-bold text-lg">Savvy Shop Whisper</h3>
-            <span class="text-xs bg-savvy-purple/10 text-savvy-purple px-2 py-0.5 rounded-full">BETA</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" id="savvy-settings-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </button>
-            <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" id="savvy-close-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
+    <div class="fixed inset-0 z-50 bg-black bg-opacity-50 transition-opacity animate-fade-in" id="savvy-overlay-backdrop"></div>
+    <div class="savvy-side-panel animate-slide-in-right">
+      <div class="savvy-panel-header">
+        <div class="flex items-center space-x-2">
+          <span class="bg-savvy-purple text-white p-1 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </span>
+          <h3 class="font-bold text-lg">Savvy Shop Whisper</h3>
+          <span class="text-xs bg-savvy-purple/10 text-savvy-purple px-2 py-0.5 rounded-full">BETA</span>
         </div>
-        
-        <div class="p-4 max-h-[80vh] overflow-y-auto">
-          <div class="flex flex-col space-y-6">
-            <!-- Status bar -->
-            <div id="savvy-analysis-status" class="text-sm"></div>
-            
-            <!-- Loading state -->
-            <div id="savvy-loading" class="py-12 flex flex-col items-center justify-center">
-              <div class="w-16 h-16 border-4 border-savvy-purple/30 border-t-savvy-purple rounded-full animate-spin"></div>
-              <p class="mt-4 text-gray-500">Analyzing prices and reviews...</p>
+        <div class="flex items-center space-x-2">
+          <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" id="savvy-settings-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+          <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500" id="savvy-close-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="savvy-panel-content">
+        <div class="flex flex-col space-y-6">
+          <!-- Status bar -->
+          <div id="savvy-analysis-status" class="text-sm"></div>
+          
+          <!-- Loading state -->
+          <div id="savvy-loading" class="py-12 flex flex-col items-center justify-center">
+            <div class="w-16 h-16 border-4 border-savvy-purple/30 border-t-savvy-purple rounded-full animate-spin"></div>
+            <p class="mt-4 text-gray-500">Analyzing prices and reviews...</p>
+          </div>
+          
+          <!-- Product info section (hidden initially) -->
+          <div id="savvy-product-info" class="hidden">
+            <!-- Content will be populated dynamically -->
+          </div>
+          
+          <!-- Tabs navigation -->
+          <div id="savvy-tabs" class="hidden border-b border-gray-200 dark:border-gray-700">
+            <div class="flex space-x-4">
+              <button class="savvy-tab-btn active py-2 border-b-2 border-savvy-purple font-medium text-savvy-purple" data-tab="prices">
+                Best Prices
+              </button>
+              <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="reviews">
+                Reviews
+              </button>
+              <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="alternatives">
+                Similar Products
+              </button>
+              <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="scraper">
+                Web Scraper
+              </button>
             </div>
-            
-            <!-- Product info section (hidden initially) -->
-            <div id="savvy-product-info" class="hidden">
+          </div>
+          
+          <!-- Tab content sections -->
+          <div id="savvy-tab-content" class="hidden">
+            <div id="savvy-prices-tab" class="savvy-tab-panel">
               <!-- Content will be populated dynamically -->
             </div>
             
-            <!-- Tabs navigation -->
-            <div id="savvy-tabs" class="hidden border-b border-gray-200 dark:border-gray-700">
-              <div class="flex space-x-4">
-                <button class="savvy-tab-btn active py-2 border-b-2 border-savvy-purple font-medium text-savvy-purple" data-tab="prices">
-                  Best Prices
-                </button>
-                <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="reviews">
-                  Reviews
-                </button>
-                <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="alternatives">
-                  Similar Products
-                </button>
-                <button class="savvy-tab-btn py-2 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700" data-tab="scraper">
-                  Web Scraper
-                </button>
-              </div>
+            <div id="savvy-reviews-tab" class="savvy-tab-panel hidden">
+              <!-- Content will be populated dynamically -->
             </div>
             
-            <!-- Tab content sections -->
-            <div id="savvy-tab-content" class="hidden">
-              <div id="savvy-prices-tab" class="savvy-tab-panel">
-                <!-- Content will be populated dynamically -->
-              </div>
-              
-              <div id="savvy-reviews-tab" class="savvy-tab-panel hidden">
-                <!-- Content will be populated dynamically -->
-              </div>
-              
-              <div id="savvy-alternatives-tab" class="savvy-tab-panel hidden">
-                <!-- Content will be populated dynamically -->
-              </div>
-              
-              <div id="savvy-scraper-tab" class="savvy-tab-panel hidden">
-                <div class="space-y-4">
-                  <h3 class="font-semibold">Web Scraper</h3>
-                  <p class="text-sm text-gray-500">Scrape product data from this page or any other URL.</p>
-                  
-                  <div class="flex items-center space-x-2">
-                    <button id="savvy-scrape-current" class="px-4 py-2 bg-savvy-purple text-white rounded-md text-sm font-medium hover:bg-savvy-purple-dark transition-colors">
-                      Scrape Current Page
-                    </button>
-                    <div class="relative flex-grow">
-                      <input id="savvy-url-input" type="text" placeholder="Enter product URL to scrape" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
-                    </div>
-                    <button id="savvy-scrape-url" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">
-                      Scrape URL
-                    </button>
+            <div id="savvy-alternatives-tab" class="savvy-tab-panel hidden">
+              <!-- Content will be populated dynamically -->
+            </div>
+            
+            <div id="savvy-scraper-tab" class="savvy-tab-panel hidden">
+              <div class="space-y-4">
+                <h3 class="font-semibold">Web Scraper</h3>
+                <p class="text-sm text-gray-500">Scrape product data from this page or any other URL.</p>
+                
+                <div class="flex items-center space-x-2">
+                  <button id="savvy-scrape-current" class="px-4 py-2 bg-savvy-purple text-white rounded-md text-sm font-medium hover:bg-savvy-purple-dark transition-colors">
+                    Scrape Current Page
+                  </button>
+                  <div class="relative flex-grow">
+                    <input id="savvy-url-input" type="text" placeholder="Enter product URL to scrape" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
                   </div>
-                  
-                  <div id="savvy-scraping-status" class="text-sm min-h-[24px]"></div>
-                  
-                  <div id="savvy-scraped-product-info"></div>
-                  
-                  <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg mt-6">
-                    <h4 class="font-medium text-sm">Supported Sites</h4>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Amazon</div>
-                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Walmart</div>
-                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Target</div>
-                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">Best Buy</div>
-                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">eBay</div>
-                      <div class="bg-white p-2 rounded border border-gray-200 text-xs">AliExpress</div>
-                    </div>
+                  <button id="savvy-scrape-url" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors">
+                    Scrape URL
+                  </button>
+                </div>
+                
+                <div id="savvy-scraping-status" class="text-sm min-h-[24px]"></div>
+                
+                <div id="savvy-scraped-product-info"></div>
+                
+                <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg mt-6">
+                  <h4 class="font-medium text-sm">Supported Sites</h4>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                    <div class="bg-white p-2 rounded border border-gray-200 text-xs">Amazon</div>
+                    <div class="bg-white p-2 rounded border border-gray-200 text-xs">Walmart</div>
+                    <div class="bg-white p-2 rounded border border-gray-200 text-xs">Target</div>
+                    <div class="bg-white p-2 rounded border border-gray-200 text-xs">Best Buy</div>
+                    <div class="bg-white p-2 rounded border border-gray-200 text-xs">eBay</div>
+                    <div class="bg-white p-2 rounded border border-gray-200 text-xs">AliExpress</div>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Trial/Premium banner -->
-            <div id="savvy-subscription-banner" class="mt-4 p-4 bg-gradient-to-r from-savvy-purple to-savvy-blue rounded-lg text-white hidden">
-              <!-- Content will be populated dynamically -->
-            </div>
+          </div>
+          
+          <!-- Trial/Premium banner -->
+          <div id="savvy-subscription-banner" class="mt-4 p-4 bg-gradient-to-r from-savvy-purple to-savvy-blue rounded-lg text-white hidden">
+            <!-- Content will be populated dynamically -->
           </div>
         </div>
       </div>

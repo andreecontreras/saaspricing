@@ -102,6 +102,15 @@ body.overflow-hidden {
   }
 }
 
+@keyframes savvy-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @keyframes savvy-slide-in {
   from {
     transform: translateY(100%);
@@ -118,6 +127,10 @@ body.overflow-hidden {
 
 .animate-slide-in {
   animation: savvy-slide-in 0.4s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: savvy-slide-in-right 0.4s ease-out forwards;
 }
 
 /* Helper utility classes */
@@ -149,4 +162,48 @@ body.overflow-hidden {
   transform: translateZ(0);
   backface-visibility: hidden;
   perspective: 1000px;
+}
+
+/* New styles for the side panel layout */
+.savvy-side-panel {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 400px !important;
+  max-width: 100% !important;
+  background: white !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1) !important;
+  overflow-y: auto !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Lovable-style panel header */
+.savvy-panel-header {
+  padding: 16px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: white !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+/* Lovable-style panel content */
+.savvy-panel-content {
+  flex: 1 !important;
+  padding: 16px !important;
+  overflow-y: auto !important;
+}
+
+/* Lovable-style panel footer */
+.savvy-panel-footer {
+  padding: 16px !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+  background: white !important;
 }
