@@ -150,44 +150,6 @@
       border-radius: 50%;
     }
     
-    .trial-banner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: #f8fafc;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
-    }
-    
-    .trial-banner h3 {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    
-    .trial-banner p {
-      margin: 4px 0 0;
-      font-size: 12px;
-      color: #64748b;
-    }
-    
-    .upgrade-btn {
-      padding: 8px 12px;
-      background-color: #6366f1;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 12px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    
-    .upgrade-btn:hover {
-      background-color: #4f46e5;
-    }
-    
     .section {
       margin-bottom: 20px;
     }
@@ -319,6 +281,12 @@
       border-radius: 8px;
     }
 
+    .loading-message {
+      text-align: center;
+      padding: 20px 0;
+      color: #64748b;
+    }
+
     .no-products-message {
       text-align: center;
       padding: 20px 0;
@@ -387,6 +355,39 @@
 
     .option.active-option {
       animation: optionSelected 0.3s ease;
+    }
+
+    .upgrade-btn {
+      padding: 8px 12px;
+      background-color: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    .upgrade-btn:hover {
+      background-color: #4f46e5;
+    }
+
+    /* Add loading spinner */
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spinner 0.8s linear infinite;
+      margin: 10px auto;
+    }
+
+    @keyframes spinner {
+      to {transform: rotate(360deg);}
     }
   </style>
 </head>
@@ -463,7 +464,6 @@
         <h2>Similar Products</h2>
         <p>Find better deals across the web</p>
         <div id="alternative-products-container" class="alternative-products-container">
-          <!-- This section will be populated by JavaScript -->
           <div class="loading-message">Loading alternative products...</div>
         </div>
       </div>

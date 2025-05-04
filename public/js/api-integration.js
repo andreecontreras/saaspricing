@@ -384,7 +384,8 @@ export function checkPriceHistory(productUrl) {
 // Initialize the product section when the popup loads
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Popup loaded, initializing products section');
-  // Initialize API key first, then update product display
+  
+  // Initialize API key first
   initializeApiKey();
   
   // Add event listener to the settings button for testing
@@ -396,6 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Setup the initial product display
-  setTimeout(updateProductDisplay, 300);
+  // Setup the initial product display with a slight delay to ensure everything is initialized
+  setTimeout(updateProductDisplay, 500);
 });
