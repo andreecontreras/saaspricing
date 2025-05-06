@@ -1,4 +1,3 @@
-
 // Alternative products functionality
 
 // Define alternative products data (as fallback if API doesn't work)
@@ -28,7 +27,7 @@ const alternativeProducts = [
     price: 24.49,
     oldPrice: 34.00,
     image: "https://images.unsplash.com/photo-1473187983305-f615310e7daa?auto=format&fit=crop&w=320&q=80",
-    tag: "",
+    tag: "Lowest Price",
     reviews: 4.2,
     shipping: "Standard",
     quality: "High"
@@ -38,8 +37,8 @@ const alternativeProducts = [
     price: 45.99,
     oldPrice: 59.99,
     image: "https://images.unsplash.com/photo-1544113559-d0769346e428?auto=format&fit=crop&w=320&q=80",
-    tag: "Popular",
-    reviews: 4.6,
+    tag: "Top Rated",
+    reviews: 4.9,
     shipping: "Standard",
     quality: "High"
   },
@@ -48,7 +47,7 @@ const alternativeProducts = [
     price: 129.99,
     oldPrice: 169.99,
     image: "https://images.unsplash.com/photo-1585792180666-f7347c490ee2?auto=format&fit=crop&w=320&q=80",
-    tag: "Bestseller",
+    tag: "Fast Shipping",
     reviews: 4.5,
     shipping: "Fast",
     quality: "Medium"
@@ -200,6 +199,8 @@ export function filterProductsByMode(products, mode) {
   const lowestPriceProducts = products.filter(product => {
     // Account for both our mock data format and API data format
     return (product.oldPrice && (product.oldPrice - product.price) > 10) ||
+           (product.tag && product.tag.includes('Deal')) ||
+           (product.tag && product.tag.includes('Lowest')) ||
            (product.advantage && product.advantage.toLowerCase().includes('price') || 
             product.advantage && product.advantage.toLowerCase().includes('value'));
   });
@@ -235,53 +236,57 @@ export function filterProductsByMode(products, mode) {
       break;
     case 'balanced':
       // For balanced mode, we need to show a mix of all criteria
-      const combinedSet = new Set();
+      // Guarantee at least one product from each category for a truly balanced view
+      let balancedSelection = [];
       
-      // Try to add one product from each category for balanced mode
+      // Always include one fast shipping product in balanced view
       if (fastShippingProducts.length > 0) {
-        combinedSet.add(fastShippingProducts[0]);
+        balancedSelection.push(fastShippingProducts[0]);
       }
       
+      // Always include one high review product (if not already included)
       if (highReviewProducts.length > 0) {
-        const reviewProduct = highReviewProducts.find(p => {
-          const pName = p.name || p.title;
-          return !Array.from(combinedSet).some(item => (item.name || item.title) === pName);
-        });
+        const reviewProduct = highReviewProducts.find(p => 
+          !balancedSelection.some(item => {
+            const itemName = item.name || item.title;
+            const pName = p.name || p.title;
+            return itemName === pName;
+          })
+        );
+        
         if (reviewProduct) {
-          combinedSet.add(reviewProduct);
+          balancedSelection.push(reviewProduct);
         }
       }
       
+      // Always include one lowest price product (if not already included)
       if (lowestPriceProducts.length > 0) {
-        const priceProduct = lowestPriceProducts.find(p => {
-          const pName = p.name || p.title;
-          return !Array.from(combinedSet).some(item => (item.name || item.title) === pName);
-        });
+        const priceProduct = lowestPriceProducts.find(p => 
+          !balancedSelection.some(item => {
+            const itemName = item.name || item.title;
+            const pName = p.name || p.title;
+            return itemName === pName;
+          })
+        );
+        
         if (priceProduct) {
-          combinedSet.add(priceProduct);
+          balancedSelection.push(priceProduct);
         }
       }
       
-      if (highQualityProducts.length > 0) {
-        const qualityProduct = highQualityProducts.find(p => {
-          const pName = p.name || p.title;
-          return !Array.from(combinedSet).some(item => (item.name || item.title) === pName);
-        });
-        if (qualityProduct) {
-          combinedSet.add(qualityProduct);
-        }
-      }
-      
-      // If we still have room, add other products
+      // If we still have room, add other products to round out the mix
       for (const product of products) {
         const pName = product.name || product.title;
-        if (combinedSet.size < 5 && !Array.from(combinedSet).some(item => (item.name || item.title) === pName)) {
-          combinedSet.add(product);
+        if (balancedSelection.length < 5 && 
+            !balancedSelection.some(item => (item.name || item.title) === pName)) {
+          balancedSelection.push(product);
         }
+        
+        if (balancedSelection.length >= 5) break;
       }
       
-      console.log("Balanced filtered products:", Array.from(combinedSet).map(p => p.name || p.title));
-      filteredProducts = Array.from(combinedSet);
+      console.log("Balanced filtered products:", balancedSelection.map(p => p.name || p.title));
+      filteredProducts = balancedSelection;
       break;
     default:
       filteredProducts = products;
@@ -400,7 +405,7 @@ function createAPIProductCard(product) {
   tagContainer.className = 'product-tags';
   
   // Review score if available
-  if (product.rating) {
+  if (product.rating && product.rating >= 4.5) {
     const reviewTag = document.createElement('span');
     reviewTag.className = 'product-tag review-tag';
     reviewTag.textContent = `★ ${product.rating}`;
@@ -409,30 +414,31 @@ function createAPIProductCard(product) {
     tagContainer.appendChild(reviewTag);
   }
   
-  // Advantage tag if available
-  if (product.advantage) {
-    const advantageTag = document.createElement('span');
-    advantageTag.className = 'product-tag';
-    
-    // Style tag based on advantage type
-    if (product.advantage.includes('price') || product.advantage.includes('value')) {
-      advantageTag.style.backgroundColor = '#10b981'; // Green for price advantages
-    } else if (product.advantage.includes('Fast') || product.advantage.includes('ship')) {
-      advantageTag.style.backgroundColor = '#3B82F6'; // Blue for shipping advantages
-    } else if (product.advantage.includes('rate') || product.advantage.includes('review')) {
-      advantageTag.style.backgroundColor = '#F59E0B'; // Yellow for review advantages
-    } else {
-      advantageTag.style.backgroundColor = '#8B5CF6'; // Purple for other advantages
-    }
-    
-    advantageTag.textContent = product.advantage;
-    tagContainer.appendChild(advantageTag);
+  // Fast shipping tag if available
+  if (product.advantage && product.advantage.toLowerCase().includes('fast')) {
+    const shippingTag = document.createElement('span');
+    shippingTag.className = 'product-tag shipping-tag';
+    shippingTag.textContent = `🚚 Fast`;
+    shippingTag.style.backgroundColor = '#3B82F6';
+    shippingTag.style.color = '#FFF';
+    tagContainer.appendChild(shippingTag);
+  }
+  
+  // Price advantage tag if available
+  if (product.advantage && (product.advantage.toLowerCase().includes('price') || 
+      product.advantage.toLowerCase().includes('value'))) {
+    const priceTag = document.createElement('span');
+    priceTag.className = 'product-tag price-tag';
+    priceTag.textContent = `💰 Best Price`;
+    priceTag.style.backgroundColor = '#10b981';
+    priceTag.style.color = '#FFF';
+    tagContainer.appendChild(priceTag);
   }
   
   // Trust badge
   const trustBadge = document.createElement('span');
   trustBadge.className = 'trust-badge';
-  trustBadge.textContent = 'Trust';
+  trustBadge.textContent = 'Scout Trust';
   tagContainer.appendChild(trustBadge);
   
   info.appendChild(tagContainer);
@@ -501,6 +507,19 @@ function createProductCard(product) {
   if (product.tag) {
     const tag = document.createElement('span');
     tag.className = 'product-tag';
+    
+    // Style tag based on type
+    if (product.tag.includes('Deal') || product.tag.includes('Lowest')) {
+      tag.style.backgroundColor = '#10b981'; // Green for price advantages
+      tag.className += ' price-tag';
+    } else if (product.tag.includes('Fast')) {
+      tag.style.backgroundColor = '#3B82F6'; // Blue for shipping advantages
+      tag.className += ' shipping-tag';
+    } else if (product.tag.includes('Top') || product.tag.includes('Rate')) {
+      tag.style.backgroundColor = '#F59E0B'; // Yellow for review advantages
+      tag.className += ' review-tag';
+    }
+    
     tag.textContent = product.tag;
     tagContainer.appendChild(tag);
   }
@@ -525,20 +544,10 @@ function createProductCard(product) {
     tagContainer.appendChild(shippingTag);
   }
   
-  // Quality tag if high
-  if (product.quality === "High") {
-    const qualityTag = document.createElement('span');
-    qualityTag.className = 'product-tag quality-tag';
-    qualityTag.textContent = `✨ Quality`;
-    qualityTag.style.backgroundColor = '#8B5CF6';
-    qualityTag.style.color = '#FFF';
-    tagContainer.appendChild(qualityTag);
-  }
-  
   // Trust badge
   const trustBadge = document.createElement('span');
   trustBadge.className = 'trust-badge';
-  trustBadge.textContent = 'Trust';
+  trustBadge.textContent = 'Scout Trust';
   tagContainer.appendChild(trustBadge);
   
   info.appendChild(tagContainer);

@@ -75,7 +75,7 @@ export function updatePrioritization(mode) {
   if (mode === 'balanced') {
     const descriptionElement = document.querySelector('.content .section:nth-child(2) p');
     if (descriptionElement) {
-      descriptionElement.textContent = 'A smart mix of price, speed, quality, and reviews.';
+      descriptionElement.textContent = 'A smart mix of price, shipping speed, and reviews.';
     }
   }
 }

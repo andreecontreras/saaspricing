@@ -1,4 +1,3 @@
-
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
 import {
@@ -95,7 +94,7 @@ const prioritizeOptions = [
     label: "Balanced",
     icon: <Equal className="text-savvy-purple" size={18} />,
     value: "balanced",
-    desc: "A smart mix of price, speed, quality, and reviews.",
+    desc: "A smart mix of price, shipping speed, and reviews.",
   },
 ];
 
@@ -138,56 +137,47 @@ const getFilteredProducts = (mode: string) => {
       break;
     case "balanced":
       // Create a set to store unique products
-      const combinedProducts = new Set<typeof mockProducts[0]>();
+      let balancedSelection = [];
       
       // ALWAYS ensure we include at least one fast shipping product in the balanced view
-      // Place this first to prioritize it
       if (fastShippingProducts.length > 0) {
-        combinedProducts.add(fastShippingProducts[0]);
+        balancedSelection.push(fastShippingProducts[0]);
       }
       
-      // Also include a high review product
+      // ALWAYS include a high review product (if not already included)
       if (highReviewProducts.length > 0) {
         const reviewProduct = highReviewProducts.find(p => 
-          !Array.from(combinedProducts).some(cp => cp.id === p.id)
+          !balancedSelection.some(cp => cp.id === p.id)
         );
         if (reviewProduct) {
-          combinedProducts.add(reviewProduct);
+          balancedSelection.push(reviewProduct);
         }
       }
       
-      // Add a lowest price product (if not already included)
+      // ALWAYS include a lowest price product (if not already included)
       const priceProduct = lowestPriceProducts.find(p => 
-        !Array.from(combinedProducts).some(cp => cp.id === p.id)
+        !balancedSelection.some(cp => cp.id === p.id)
       );
       if (priceProduct) {
-        combinedProducts.add(priceProduct);
+        balancedSelection.push(priceProduct);
       }
       
-      // Add a high quality product (if not already included)
-      const qualityProduct = highQualityProducts.find(p => 
-        !Array.from(combinedProducts).some(cp => cp.id === p.id)
-      );
-      if (qualityProduct) {
-        combinedProducts.add(qualityProduct);
-      }
-      
-      // If we still have room for 5 products, add other balanced tagged products
+      // If we still have room for more products, add other balanced tagged products
       const balancedTaggedProducts = mockProducts.filter(p => 
         p.tags.includes("balanced") && 
-        !Array.from(combinedProducts).some(cp => cp.id === p.id)
+        !balancedSelection.some(cp => cp.id === p.id)
       );
       
       for (const product of balancedTaggedProducts) {
-        if (combinedProducts.size < 5) {
-          combinedProducts.add(product);
+        if (balancedSelection.length < 5) {
+          balancedSelection.push(product);
         } else {
           break; // We've reached our limit
         }
       }
       
-      console.log("Balanced filtered products:", Array.from(combinedProducts).map(p => p.name));
-      result = Array.from(combinedProducts);
+      console.log("Balanced filtered products:", balancedSelection.map(p => p.name));
+      result = balancedSelection;
       break;
     default:
       result = mockProducts;
