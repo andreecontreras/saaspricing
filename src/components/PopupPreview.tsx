@@ -236,9 +236,6 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
             <div className="inline-block align-top mt-2 px-3 py-1 rounded-md bg-white/60 font-semibold text-xs uppercase text-savvy-purple tracking-wide shadow-sm">
               BETA
             </div>
-            <div className="mt-3 text-xs text-white font-semibold bg-savvy-blue/60 px-3 py-1 rounded-lg shadow-xl w-fit animate-fade-in">
-              🚀 Try it for Free!
-            </div>
           </div>
         </div>
 
