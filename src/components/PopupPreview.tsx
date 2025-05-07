@@ -1,3 +1,4 @@
+
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
 import {
@@ -417,7 +418,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
         {showAlternatives && (
           <div className="px-7 mt-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-2">
-              Alternative Products
+              Similar Products
             </h2>
             <div className="flex flex-col gap-3">
               <div className="bg-white border border-gray-100 rounded-lg px-4 py-3 shadow">
