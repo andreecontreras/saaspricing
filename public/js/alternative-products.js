@@ -1,4 +1,3 @@
-
 // Alternative products functionality
 
 // Define alternative products data (as fallback if API doesn't work)
@@ -70,7 +69,7 @@ export function initializeAlternativeProducts() {
     
     // Create section header
     const sectionHeader = document.createElement('h2');
-    sectionHeader.textContent = 'Similar Products';
+    sectionHeader.textContent = 'Alternative Products';
     alternativesSection.appendChild(sectionHeader);
     
     // Create section description
