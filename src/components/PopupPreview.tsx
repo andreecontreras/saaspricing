@@ -439,26 +439,6 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
           </div>
         )}
 
-        <div className="px-7 mt-8 flex justify-center">
-          <div className="flex items-center w-full rounded-2xl shadow-lg bg-gradient-to-br from-[#8B5CF6]/90 via-[#3B82F6]/70 to-[#a5b4fc]/80 p-4 ring-2 ring-white/40 backdrop-blur-lg relative">
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-white mb-0.5 flex items-center gap-1">
-                <Heart size={15} className="inline-block text-white/90" />
-                Your Free Trial
-              </h3>
-              <p className="text-xs text-white/85">
-                <span className="font-bold">7</span> days remaining
-              </p>
-            </div>
-            <button
-              className="bg-white shadow text-savvy-purple rounded-md px-4 py-1.5 ml-4 text-xs font-bold hover:bg-savvy-green/10 active:scale-95 transition-all duration-100"
-              style={{ boxShadow: "0 2px 6px 0 rgba(70,70,120,0.08)" }}
-            >
-              Upgrade
-            </button>
-          </div>
-        </div>
-
         <footer className="px-7 py-5 mt-3 border-t border-gray-100 bg-transparent">
           <div className="flex gap-6 justify-center">
             <a href="#" className="text-xs text-gray-500 hover:text-savvy-purple transition font-medium">
