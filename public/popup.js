@@ -1,3 +1,4 @@
+
 // Main popup.js file - imports and coordinates all functionality
 import { initializeApiKey, testProductDetection, trackPriceDrops, checkPriceHistory } from './js/api-integration.js';
 import { initializePrioritization } from './js/prioritization.js';
@@ -107,7 +108,7 @@ function updateProductDisplay(data) {
   
   console.log("Updating product display with data:", data);
   
-  // Get the container for alternative products
+  // Get the container for similar products
   const productsContainer = document.getElementById('alternative-products-container');
   if (!productsContainer) {
     console.error('Products container not found');

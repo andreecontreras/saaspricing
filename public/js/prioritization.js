@@ -67,7 +67,7 @@ export function updatePrioritization(mode) {
     selectedOption.parentElement.classList.add('active-option');
   }
   
-  // Update storage and refresh any visible alternative products
+  // Update storage and refresh any visible similar products
   chrome.storage.sync.set({ 'prioritizeBy': mode });
   refreshAlternativeProducts(mode);
   

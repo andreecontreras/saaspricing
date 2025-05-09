@@ -101,7 +101,7 @@ const prioritizeOptions = [
 
 const displayOptions = [
   { label: "Show Trust Scores", icon: <Heart className="text-savvy-green" size={18} />, value: "trust" },
-  { label: "Show Alternative Products", icon: <ArrowUp className="text-savvy-blue" size={18} />, value: "alts" },
+  { label: "Show Similar Products", icon: <ArrowUp className="text-savvy-blue" size={18} />, value: "alts" },
   { label: "Notify on Price Drops", icon: <Star className="text-savvy-yellow" size={18} />, value: "price-drops" },
 ];
 
@@ -388,7 +388,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
               />
               <ArrowUp className="text-savvy-blue" size={18} />
               <span className="font-medium text-gray-700">
-                Show Alternative Products
+                Show Similar Products
               </span>
             </label>
             <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer group">
