@@ -311,7 +311,8 @@ function createDynamicProductCard(product) {
 
 // Function to add a test button for developer testing
 function addTestButton() {
-  const footer = document.querySelector('.footer');
+  // Fix: Use querySelector for footer class instead of just selecting by tag
+  const footer = document.querySelector('.footer-content');
   
   if (footer) {
     const testButton = document.createElement('button');
@@ -452,7 +453,9 @@ function initializeHuggingFace() {
   }
   
   // Initialize sentiment analysis feature
-  initSentimentAnalysis();
+  if (typeof initSentimentAnalysis === 'function') {
+    initSentimentAnalysis();
+  }
 }
 
 // Function to apply Lovable style classes to ensure UI/UX consistency
