@@ -1,79 +1,101 @@
 
-import React from 'react'
-import { cn } from "@/lib/utils"
-import { AspectRatio } from "@/components/ui/aspect-ratio"
+import React from "react";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { cn } from "@/lib/utils";
+import { ArrowDown, Star, Truck, Equal, Sparkles } from "lucide-react";
 
-interface ProductCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  title: string
-  price: number | string
-  image?: string
-  seller?: string
-  rating?: number
-  advantage?: string
-  url?: string
+interface ProductCardProps {
+  product: {
+    id: number;
+    name: string;
+    price: number;
+    oldPrice?: number;
+    reviews?: number;
+    shipping?: string;
+    quality?: string;
+    img: string;
+    tags?: string[];
+  };
+  priorityMode?: string;
+  showTrustScore?: boolean;
+  onClick?: () => void;
+  className?: string;
 }
 
-export const ProductCard = ({
-  title,
-  price,
-  image,
-  seller,
-  rating,
-  advantage,
-  url,
+const ProductCard = ({
+  product,
+  priorityMode = "balanced",
+  showTrustScore = true,
+  onClick,
   className,
-  ...props
 }: ProductCardProps) => {
   return (
     <div
+      onClick={onClick}
       className={cn(
-        "rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden transition-all hover:-translate-y-1 hover:shadow-md cursor-pointer",
+        "flex-shrink-0 w-36 bg-white rounded-2xl shadow ring-1 ring-purple-500/15 p-2 flex flex-col items-center transition-all hover:scale-105 hover:shadow-xl hover:bg-blue-500/10 cursor-pointer group outline-none focus:ring-2 focus:ring-blue-500",
         className
       )}
-      onClick={() => {
-        if (url) {
-          window.open(url, '_blank')
-        }
-      }}
-      {...props}
+      style={{ minWidth: "8.5rem" }}
     >
-      <AspectRatio ratio={1}>
-        <img 
-          src={image || "https://via.placeholder.com/100"} 
-          alt={title}
-          className="object-cover w-full h-full"
-          onError={(e) => {
-            e.currentTarget.src = "https://via.placeholder.com/100"
-          }}
-        />
-      </AspectRatio>
-      <div className="p-3">
-        <h3 className="font-medium text-sm line-clamp-2" title={title}>{title}</h3>
-        {seller && (
-          <p className="text-xs text-muted-foreground mt-1">{seller}</p>
+      <div className="w-24 h-20 rounded-xl overflow-hidden mb-2 relative">
+        <AspectRatio ratio={6/5} className="w-full h-full">
+          <img
+            src={product.img}
+            className="w-full h-full object-cover transition-all group-hover:brightness-90"
+            alt={product.name}
+          />
+        </AspectRatio>
+      </div>
+      
+      <div className="font-semibold text-xs text-gray-800 text-center truncate w-full mb-0.5">
+        {product.name}
+      </div>
+      
+      <div className="flex items-end gap-1 mb-1">
+        <span className="text-purple-600 font-bold text-sm">
+          ${product.price}
+        </span>
+        {product.oldPrice && product.oldPrice !== product.price ? (
+          <span className="text-gray-400 text-xs line-through">
+            ${product.oldPrice}
+          </span>
+        ) : null}
+      </div>
+      
+      <div className="flex items-center justify-center text-[11px] gap-1 text-gray-500">
+        {(product.shipping?.includes("1-2") || product.shipping?.includes("1 day")) ? (
+          <>
+            <Truck size={13} className="text-blue-500" />
+            <span>{product.shipping}</span>
+          </>
+        ) : priorityMode === "review" || (priorityMode === "balanced" && product.reviews && product.reviews >= 4.5) ? (
+          <>
+            <Star size={13} className="text-yellow-400" />
+            <span>{product.reviews}</span>
+          </>
+        ) : priorityMode === "lowest" || (priorityMode === "balanced" && product.tags?.includes("lowest")) ? (
+          <>
+            <ArrowDown size={13} className="text-green-500" />
+            <span>Deal!</span>
+          </>
+        ) : product.quality === "High" && (priorityMode === "balanced") ? (
+          <>
+            <Sparkles size={13} className="text-purple-500" />
+            <span>Quality</span>
+          </>
+        ) : (
+          <>
+            <Equal size={13} className="text-gray-500" />
+            <span>Value</span>
+          </>
         )}
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-semibold">${price}</span>
-          {rating && (
-            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full inline-flex items-center">
-              ★ {rating}
-            </span>
-          )}
-        </div>
-        {advantage && (
-          <div className="mt-2">
-            <span className={cn(
-              "text-xs px-2 py-1 rounded-full",
-              advantage.includes('price') || advantage.includes('value') ? "bg-green-100 text-green-800" :
-              advantage.includes('Fast') || advantage.includes('ship') ? "bg-blue-100 text-blue-800" :
-              advantage.includes('rate') || advantage.includes('review') ? "bg-yellow-100 text-yellow-800" :
-              "bg-purple-100 text-purple-800"
-            )}>
-              {advantage}
-            </span>
-          </div>
+        {showTrustScore && (
+          <span className="ml-1 text-xs bg-green-500/10 text-green-700 font-bold px-1.5 py-0.5 rounded">Trust</span>
         )}
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default ProductCard;

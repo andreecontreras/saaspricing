@@ -1,60 +1,53 @@
 
-import React from 'react'
-import './App.css'
-import { ProductCard } from './components/ui/product-card'
+import { useState } from 'react';
+import PopupPreview from './components/PopupPreview';
+import { Toaster } from "@/components/ui/toaster";
+import './App.css';
 
 function App() {
-  // Sample product data to showcase the components
-  const products = [
-    {
-      title: "Wireless Noise Cancelling Headphones",
-      price: 249.99,
-      image: "https://via.placeholder.com/300x300?text=Headphones",
-      seller: "AudioTech",
-      rating: 4.7,
-      advantage: "Best value",
-      url: "#"
-    },
-    {
-      title: "Smart Watch with Health Monitoring",
-      price: 199.99,
-      image: "https://via.placeholder.com/300x300?text=SmartWatch",
-      seller: "TechGear",
-      rating: 4.5,
-      advantage: "Fast shipping",
-      url: "#"
-    },
-    {
-      title: "Professional Camera with 4K Video",
-      price: 599.99,
-      image: "https://via.placeholder.com/300x300?text=Camera",
-      seller: "PhotoPro",
-      rating: 4.8,
-      advantage: "Top rated",
-      url: "#"
-    }
-  ]
-
+  const [open, setOpen] = useState(false);
+  
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6 text-center">Scout.io Product Showcase</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((product, index) => (
-          <ProductCard
-            key={index}
-            title={product.title}
-            price={product.price}
-            image={product.image}
-            seller={product.seller}
-            rating={product.rating}
-            advantage={product.advantage}
-            url={product.url}
-          />
-        ))}
+    <div className="app">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-6 space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Scout.io</h1>
+            <p className="text-gray-600">Your browser extension for smarter shopping</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Browser Extension Preview</h2>
+                <p className="text-sm text-gray-600">See how it works in action</p>
+              </div>
+              <button 
+                onClick={() => setOpen(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+              >
+                View Demo
+              </button>
+            </div>
+            
+            <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+              <h3 className="text-md font-medium text-blue-800 mb-2">Key Features</h3>
+              <ul className="space-y-2 text-sm text-blue-700">
+                <li>• Find better prices across multiple sites</li>
+                <li>• Compare product reviews and quality ratings</li>
+                <li>• Get notified about price drops</li>
+                <li>• View shipping times at a glance</li>
+                <li>• Smart product recommendations</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
+      
+      <PopupPreview open={open} onOpenChange={setOpen} />
+      <Toaster />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
