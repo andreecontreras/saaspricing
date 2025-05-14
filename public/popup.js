@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Apply Lovable style classes to ensure consistency
   applyLovableStyleClasses();
+
+  // Initialize Hugging Face integration if available
+  initializeHuggingFace();
   
   // Listen for messages from the background script
   chrome.runtime.onMessage.addListener(function(message) {
