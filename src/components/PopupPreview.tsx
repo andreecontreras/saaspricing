@@ -100,9 +100,9 @@ const prioritizeOptions = [
 ];
 
 const displayOptions = [
-  { label: "Show Trust Scores", icon: <Heart className="text-green-600" size={18} />, value: "trust" },
-  { label: "Show Similar Products", icon: <ArrowUp className="text-black" size={18} />, value: "alts" },
-  { label: "Notify on Price Drops", icon: <Star className="text-green-600" size={18} />, value: "price-drops" },
+  { label: "Show Trust Scores", icon: <Heart className="text-red-600" size={18} />, value: "trust" },
+  { label: "Show Similar Products", icon: <ArrowUp className="text-blue-600" size={18} />, value: "alts" },
+  { label: "Notify on Price Drops", icon: <Star className="text-yellow-500" size={18} />, value: "price-drops" },
 ];
 
 const getFilteredProducts = (mode: string) => {
@@ -326,7 +326,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                 checked={showTrustScores}
                 onChange={() => setShowTrustScores((v) => !v)}
               />
-              <Heart className="text-green-600" size={18} />
+              <Heart className="text-red-600" size={18} />
               <span className="font-medium text-gray-700">
                 Show Trust Scores
               </span>
@@ -338,7 +338,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                 checked={showAlternatives}
                 onChange={() => setShowAlternatives((v) => !v)}
               />
-              <ArrowUp className="text-black" size={18} />
+              <ArrowUp className="text-blue-600" size={18} />
               <span className="font-medium text-gray-700">
                 Show Similar Products
               </span>
@@ -350,7 +350,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                 checked={notifyPriceDrops}
                 onChange={handleNotifyPriceDrops}
               />
-              <Star className="text-green-600 group-hover:scale-110 transition-transform" size={18} />
+              <Star className="text-yellow-500 group-hover:scale-110 transition-transform" size={18} />
               <span className="font-medium text-gray-700">
                 Notify on Price Drops
               </span>
@@ -369,13 +369,13 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
 
         <footer className="px-7 py-5 mt-6 border-t border-gray-100 bg-transparent">
           <div className="flex gap-6 justify-center">
-            <a href="#" className="text-xs text-gray-500 hover:text-black transition font-medium">
+            <a href="/help" className="text-xs text-gray-500 hover:text-black transition font-medium">
               Help
             </a>
-            <a href="#" className="text-xs text-gray-500 hover:text-black transition font-medium">
+            <a href="/privacy" className="text-xs text-gray-500 hover:text-black transition font-medium">
               Privacy
             </a>
-            <a href="#" className="text-xs text-gray-500 hover:text-black transition font-medium">
+            <a href="/terms" className="text-xs text-gray-500 hover:text-black transition font-medium">
               Terms
             </a>
           </div>
