@@ -1,4 +1,3 @@
-
 // Background service worker for Scout.io Chrome Extension
 import { initApifyIntegration, searchProductPrices, processScrapedData, quickScrapeProductURL, testApifyApiKey } from './apify-integration.js';
 
@@ -14,7 +13,7 @@ const priceHistory = {};
 // Listen for installation event
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Scout.io extension installed');
-  
+
   // Set default user preferences
   await chrome.storage.sync.set({
     isEnabled: true,
@@ -26,7 +25,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     userSubscription: 'free', // 'free'
     apifyApiKey: 'apify_api_y9gocF4ETXbAde3CoqrbjiDOYpztOQ4zcywQ' // Initialize with hardcoded API key
   });
-  
+
   // Initialize Apify integration
   const apifyInitialized = await initApifyIntegration();
   console.log('Apify integration initialized:', apifyInitialized);
@@ -43,7 +42,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Background script received message:', message.type);
-  
+
   if (message.type === 'PRODUCT_DETECTED') {
     console.log('Product detected:', message.data);
     activeProduct = message.data;
@@ -100,22 +99,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === 'FORCE_PRODUCT_DETECTION') {
     // Force detection of a product for testing purposes
     console.log('Force product detection received');
-    
+
     const mockProduct = {
       title: "Test Product - Premium Wireless Headphones",
       price: 99.99,
       image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=320&q=80",
       url: "https://example.com/product/wireless-headphones"
     };
-    
+
     console.log('Forcing product detection:', mockProduct);
     activeProduct = mockProduct;
-    
+
     // Handle the product detection with the active tab
     const tabId = message.tabId || (sender.tab && sender.tab.id);
     if (tabId) {
       handleProductDetection(mockProduct, tabId);
-      
+
       // Notify popup to refresh product display
       chrome.runtime.sendMessage({
         type: 'PRODUCT_DETECTED'
@@ -123,7 +122,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Ignore error if popup is not open
         console.log('Could not notify popup, probably not open');
       });
-      
+
       sendResponse({ success: true });
     } else {
       console.error('No tab ID provided for forced product detection');
@@ -137,7 +136,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else {
       // If we don't have data yet, create some mock data for testing
       console.log('No product data available, creating mock data for testing');
-      
+
       // Create mock product data
       const mockProduct = {
         title: "Test Product - Premium Wireless Headphones",
@@ -145,11 +144,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=320&q=80",
         url: "https://example.com/product/wireless-headphones"
       };
-      
+
       // Force product detection with the mock product
       activeProduct = mockProduct;
       handleProductDetection(mockProduct, null);
-      
+
       // Try again after a short delay
       setTimeout(() => {
         if (currentProductData) {
@@ -163,10 +162,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         }
       }, 500);
-      
+
       sendResponse({ success: false, error: 'Product data being generated' });
     }
     return false;
+  } else if (message.type === 'PRODUCT_DATA') {
+    console.log('Product data received:', message.data);
+    sendResponse({ status: 'success' });
   }
 });
 
@@ -185,32 +187,32 @@ async function saveApifyApiKey(apiKey) {
 // Track price drops for a product
 function trackPriceDrops(productUrl, currentPrice) {
   if (!productUrl || !currentPrice) return;
-  
+
   // Get or initialize price history for this product
   if (!priceHistory[productUrl]) {
     priceHistory[productUrl] = [];
   }
-  
+
   // Add current price to history
   const timestamp = Date.now();
   priceHistory[productUrl].push({
     price: currentPrice,
     date: timestamp
   });
-  
+
   console.log(`Added price point for ${productUrl}: $${currentPrice} at ${new Date(timestamp).toLocaleString()}`);
   console.log('Updated price history:', priceHistory[productUrl]);
-  
+
   // Limit history to 100 entries per product
   if (priceHistory[productUrl].length > 100) {
     priceHistory[productUrl] = priceHistory[productUrl].slice(-100);
   }
-  
+
   // Save updated price history to storage
   chrome.storage.local.set({ 'priceHistory': priceHistory }, () => {
     console.log('Price history saved to storage');
   });
-  
+
   // Check if this is a price drop
   checkForPriceDrop(productUrl, currentPrice);
 }
@@ -224,25 +226,25 @@ function getPriceHistory(productUrl) {
 function checkForPriceDrop(productUrl, currentPrice) {
   const history = priceHistory[productUrl];
   if (!history || history.length < 2) return;
-  
+
   // Get previous price (not including the one we just added)
   const previousPrices = history.slice(0, -1);
   const lastPrice = previousPrices[previousPrices.length - 1].price;
-  
+
   // Calculate percentage drop
   const priceDrop = ((lastPrice - currentPrice) / lastPrice) * 100;
-  
+
   console.log(`Price drop calculation: Previous price $${lastPrice}, Current price $${currentPrice}, Drop: ${priceDrop.toFixed(2)}%`);
-  
+
   // Get minimum drop percentage from settings
   chrome.storage.sync.get('minimumPriceDropPercent', (data) => {
     const minDropPercent = data.minimumPriceDropPercent || 5;
-    
+
     // Check if we should notify
     chrome.storage.sync.get('notifyPriceDrops', (dropData) => {
       if (dropData.notifyPriceDrops && priceDrop >= minDropPercent) {
         console.log(`Significant price drop detected: ${priceDrop.toFixed(2)}% - Creating notification`);
-        
+
         // Create notification
         chrome.notifications.create({
           type: 'basic',
@@ -269,10 +271,10 @@ async function scrapeProductURL(url, tabId) {
         message: 'Starting to scrape product data...'
       }).catch(err => console.log('Error sending message to tab, may not be active yet:', err));
     }
-    
+
     // Scrape the URL
     const productData = await quickScrapeProductURL(url);
-    
+
     // Notify content script with results
     if (tabId) {
       chrome.tabs.sendMessage(tabId, {
@@ -282,11 +284,11 @@ async function scrapeProductURL(url, tabId) {
         data: productData
       }).catch(err => console.log('Error sending message to tab, may not be active yet:', err));
     }
-    
+
     return productData;
   } catch (error) {
     console.error('Error scraping product URL:', error);
-    
+
     // Notify content script of error
     if (tabId) {
       chrome.tabs.sendMessage(tabId, {
@@ -295,7 +297,7 @@ async function scrapeProductURL(url, tabId) {
         message: `Error: ${error.message}`
       }).catch(err => console.log('Error sending message to tab, may not be active yet:', err));
     }
-    
+
     throw error;
   }
 }
@@ -305,33 +307,33 @@ async function handleProductDetection(productData, tabId) {
   try {
     // Store as active product
     activeProduct = productData;
-    
+
     // Track price for this product
     if (productData.price && productData.url) {
       trackPriceDrops(productData.url, productData.price);
     }
-    
+
     // Notify popup about product detection in case popup is open
     chrome.runtime.sendMessage({
-      type: 'PRODUCT_DETECTED', 
+      type: 'PRODUCT_DETECTED',
       data: productData
     }).catch(() => {
       // Ignore error if popup is not open
     });
-    
+
     // Try to find similar products with better prices using Apify
     console.log('Searching for alternative products...');
     let alternatives = [];
-    
+
     try {
       // Use Apify to search for similar products across multiple websites
       const scrapedData = await searchProductPrices(productData);
       console.log('Scraped data from Apify:', scrapedData);
-      
+
       if (scrapedData && scrapedData.length > 0) {
         const processedData = processScrapedData(scrapedData, productData);
         console.log('Processed data:', processedData);
-        
+
         if (processedData && processedData.allPrices) {
           alternatives = processedData.allPrices.map(item => ({
             title: item.title || "Product",
@@ -348,13 +350,13 @@ async function handleProductDetection(productData, tabId) {
     } catch (error) {
       console.error('Error scraping alternatives:', error);
     }
-    
+
     // If we couldn't get real alternatives, use mock data
     if (!alternatives || alternatives.length === 0) {
       console.log('Using mock alternatives since Apify did not return usable data');
       alternatives = generateMockAlternatives(productData);
     }
-    
+
     // Generate mock or real result
     const result = {
       product: {
@@ -365,10 +367,10 @@ async function handleProductDetection(productData, tabId) {
       },
       priceData: {
         lowestPrice: {
-          price: alternatives && alternatives.length > 0 ? 
-            Math.min(productData.price * 0.85, alternatives[0].price).toFixed(2) : 
+          price: alternatives && alternatives.length > 0 ?
+            Math.min(productData.price * 0.85, alternatives[0].price).toFixed(2) :
             (productData.price * 0.85).toFixed(2),
-          seller: alternatives && alternatives.length > 0 ? 
+          seller: alternatives && alternatives.length > 0 ?
             (alternatives[0].seller || alternatives[0].title.substring(0, 15) + "...") : "BestValueStore",
           url: alternatives && alternatives.length > 0 ? alternatives[0].url : "#"
         },
@@ -400,11 +402,11 @@ async function handleProductDetection(productData, tabId) {
       },
       alternatives: alternatives || []
     };
-    
+
     // Store the processed data so it can be requested by the popup
     currentProductData = result;
     console.log('Updated current product data:', currentProductData);
-    
+
     // Send the processed data back to any listeners
     chrome.runtime.sendMessage({
       type: 'PRODUCT_DATA_READY',
@@ -412,7 +414,7 @@ async function handleProductDetection(productData, tabId) {
     }).catch(() => {
       // Ignore error if popup is not open
     });
-    
+
     // If we have a tab ID, notify that content script as well
     if (tabId) {
       try {
@@ -422,7 +424,7 @@ async function handleProductDetection(productData, tabId) {
           status: 'completed',
           message: 'Product analysis completed'
         });
-        
+
         // Send the product data to the content script
         chrome.tabs.sendMessage(tabId, {
           type: 'PRODUCT_DATA_READY',
@@ -432,10 +434,10 @@ async function handleProductDetection(productData, tabId) {
         console.error('Error sending message to tab:', error);
       }
     }
-    
+
   } catch (error) {
     console.error('Error handling product detection:', error);
-    
+
     if (tabId) {
       // Notify content script of error
       chrome.tabs.sendMessage(tabId, {
@@ -452,7 +454,7 @@ async function handleProductDetection(productData, tabId) {
 // Get price history data formatted for charts
 function getPriceChartData(productUrl) {
   const history = getPriceHistory(productUrl);
-  
+
   if (!history || history.length === 0) {
     // Return mock data if no history
     return [
@@ -464,7 +466,7 @@ function getPriceChartData(productUrl) {
       { date: "Jun", price: 95 }
     ];
   }
-  
+
   // Format actual history data
   return history.slice(-6).map(entry => {
     const date = new Date(entry.date);
@@ -479,7 +481,7 @@ function getPriceChartData(productUrl) {
 // Generate mock alternative products
 function generateMockAlternatives(productData) {
   const currentPrice = productData.price || 99.99;
-  
+
   return [
     {
       title: "Similar Premium Model",

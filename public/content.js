@@ -17,12 +17,12 @@ let userPreferences = {
 async function initialize() {
   // Load user preferences first
   await loadUserPreferences();
-  
+
   if (!userPreferences.isEnabled) {
     console.log('Savvy Shop Whisper: Extension disabled by user');
     return;
   }
-  
+
   // Check if we're on a supported e-commerce site
   const SUPPORTED_SITES = {
     'amazon.com': {
@@ -68,20 +68,20 @@ async function initialize() {
       reviewSelector: '.overview-rating-average, .rating-scores'
     }
   };
-  
+
   // Get the current domain
   const domain = window.location.hostname.replace('www.', '');
-  
+
   // Find matching site configuration
   const matchedSite = Object.keys(SUPPORTED_SITES).find(site => domain.includes(site));
-  
+
   if (!matchedSite) {
     console.log('Savvy Shop Whisper: Not a supported shopping site');
     return;
   }
-  
+
   currentSiteSelectors = SUPPORTED_SITES[matchedSite];
-  
+
   // Wait for the product container to be available in the DOM
   waitForElement(currentSiteSelectors.productContainer, initializeProductPage);
 }
@@ -89,11 +89,11 @@ async function initialize() {
 // Wait for an element to appear in the DOM
 function waitForElement(selector, callback, maxAttempts = 10) {
   let attempts = 0;
-  
+
   const checkForElement = () => {
     attempts++;
     const element = document.querySelector(selector);
-    
+
     if (element) {
       callback(element);
       return;
@@ -103,34 +103,34 @@ function waitForElement(selector, callback, maxAttempts = 10) {
       console.log(`Savvy Shop Whisper: Couldn't find element ${selector} after ${maxAttempts} attempts`);
     }
   };
-  
+
   checkForElement();
 }
 
 // Initialize product page
 function initializeProductPage(productContainer) {
   console.log('Savvy Shop Whisper: Product page detected');
-  
+
   // Extract product data
   productData = extractProductData();
-  
+
   if (!productData) {
     console.log('Savvy Shop Whisper: Could not extract product data');
     return;
   }
-  
+
   // Notify background script about product detection
   chrome.runtime.sendMessage({
     type: 'PRODUCT_DETECTED',
     data: productData
   });
-  
+
   // Create and insert trigger button
   createTriggerButton(productContainer);
-  
+
   // Create overlay (hidden initially)
   createOverlay();
-  
+
   // Listen for messages from background script
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'PRODUCT_DATA_READY') {
@@ -147,7 +147,7 @@ function initializeProductPage(productContainer) {
 function updateScrapingStatus(message) {
   const statusElement = document.getElementById('savvy-scraping-status');
   if (!statusElement) return;
-  
+
   if (message.status === 'started') {
     statusElement.innerHTML = `
       <div class="inline-flex items-center text-gray-500">
@@ -165,7 +165,7 @@ function updateScrapingStatus(message) {
         <span>${message.message || 'Scraping completed'}</span>
       </div>
     `;
-    
+
     // If we have scraped data, update the display
     if (message.data) {
       const productInfoElement = document.getElementById('savvy-scraped-product-info');
@@ -197,7 +197,7 @@ function updateScrapingStatus(message) {
 function updateAnalysisStatus(message) {
   const statusElement = document.getElementById('savvy-analysis-status');
   if (!statusElement) return;
-  
+
   if (message.status === 'started') {
     statusElement.innerHTML = `
       <div class="inline-flex items-center text-gray-500">
@@ -241,16 +241,16 @@ function extractProductData() {
     const priceElement = document.querySelector(currentSiteSelectors.priceSelector);
     const titleElement = document.querySelector(currentSiteSelectors.titleSelector);
     const imageElement = document.querySelector(currentSiteSelectors.imageSelector);
-    
+
     if (!priceElement || !titleElement) {
       return null;
     }
-    
+
     // Clean up price text to extract numeric value
     const priceText = priceElement.textContent.trim();
     const priceMatch = priceText.match(/[\d,]+\.\d{2}/) || priceText.match(/[\d,]+/);
     const price = priceMatch ? parseFloat(priceMatch[0].replace(',', '')) : null;
-    
+
     return {
       title: titleElement.textContent.trim(),
       price: price,
@@ -277,9 +277,9 @@ function createTriggerButton(container) {
       </svg>
     </button>
   `;
-  
+
   document.body.appendChild(button);
-  
+
   button.addEventListener('click', toggleOverlay);
 }
 
@@ -412,28 +412,28 @@ function createOverlay() {
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(overlayContainer);
-  
+
   // Add event listeners to overlay buttons
   document.getElementById('savvy-close-btn').addEventListener('click', toggleOverlay);
   document.getElementById('savvy-overlay-backdrop').addEventListener('click', toggleOverlay);
-  
+
   // Tab switching functionality
   const tabButtons = document.querySelectorAll('.savvy-tab-btn');
   tabButtons.forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
       const tabName = this.getAttribute('data-tab');
       switchTab(tabName);
     });
   });
-  
+
   // Add scrape buttons functionality
-  document.getElementById('savvy-scrape-current').addEventListener('click', function() {
+  document.getElementById('savvy-scrape-current').addEventListener('click', function () {
     scrapeCurrentPage();
   });
-  
-  document.getElementById('savvy-scrape-url').addEventListener('click', function() {
+
+  document.getElementById('savvy-scrape-url').addEventListener('click', function () {
     const urlInput = document.getElementById('savvy-url-input');
     const url = urlInput.value.trim();
     if (url) {
@@ -462,11 +462,11 @@ function scrapeCurrentPage() {
       <span>Scraping current page...</span>
     </div>
   `;
-  
+
   chrome.runtime.sendMessage({
     type: 'SCRAPE_PRODUCT_URL',
     url: window.location.href
-  }, function(response) {
+  }, function (response) {
     console.log('Scrape response:', response);
     // The status updates will come through the message listener
   });
@@ -481,11 +481,11 @@ function scrapeUrl(url) {
       <span>Scraping ${url}...</span>
     </div>
   `;
-  
+
   chrome.runtime.sendMessage({
     type: 'SCRAPE_PRODUCT_URL',
     url: url
-  }, function(response) {
+  }, function (response) {
     console.log('Scrape response:', response);
     // The status updates will come through the message listener
   });
@@ -494,11 +494,11 @@ function scrapeUrl(url) {
 // Toggle overlay visibility - Updated for smooth transitions
 function toggleOverlay() {
   isOverlayVisible = !isOverlayVisible;
-  
+
   if (isOverlayVisible) {
     overlayContainer.style.display = 'block';
     document.body.classList.add('overflow-hidden');
-    
+
     // Force a reflow to ensure animations work properly
     void overlayContainer.offsetWidth;
   } else {
@@ -507,14 +507,14 @@ function toggleOverlay() {
       overlayContainer.style.display = 'none';
       document.body.classList.remove('overflow-hidden');
     }, 300);
-    
+
     // Start hiding animation immediately
     const sidePanel = overlayContainer.querySelector('.savvy-side-panel');
     if (sidePanel) {
       sidePanel.style.transform = 'translateX(100%)';
       sidePanel.style.transition = 'transform 0.3s ease-out';
     }
-    
+
     const backdrop = overlayContainer.querySelector('#savvy-overlay-backdrop');
     if (backdrop) {
       backdrop.style.opacity = '0';
@@ -530,17 +530,17 @@ function switchTab(tabName) {
     tab.classList.remove('active', 'border-savvy-purple', 'text-savvy-purple');
     tab.classList.add('border-transparent', 'text-gray-500');
   });
-  
+
   // Hide all tab panels
   document.querySelectorAll('.savvy-tab-panel').forEach(panel => {
     panel.classList.add('hidden');
   });
-  
+
   // Activate the selected tab
   const activeTab = document.querySelector(`.savvy-tab-btn[data-tab="${tabName}"]`);
   activeTab.classList.add('active', 'border-savvy-purple', 'text-savvy-purple');
   activeTab.classList.remove('border-transparent', 'text-gray-500');
-  
+
   // Show the selected tab panel
   document.getElementById(`savvy-${tabName}-tab`).classList.remove('hidden');
 }
@@ -549,12 +549,12 @@ function switchTab(tabName) {
 function updateOverlayWithData(data) {
   // Hide loading state
   document.getElementById('savvy-loading').classList.add('hidden');
-  
+
   // Show product info, tabs, and content
   document.getElementById('savvy-product-info').classList.remove('hidden');
   document.getElementById('savvy-tabs').classList.remove('hidden');
   document.getElementById('savvy-tab-content').classList.remove('hidden');
-  
+
   // Update product info section
   document.getElementById('savvy-product-info').innerHTML = `
     <div class="flex items-start space-x-4">
@@ -564,25 +564,25 @@ function updateOverlayWithData(data) {
         <h2 class="font-medium text-lg">${data.product.title}</h2>
         <div class="flex items-baseline mt-1 space-x-2">
           <span class="text-xl font-bold">${data.product.currency}${data.product.currentPrice}</span>
-          ${data.priceData.lowestPrice.price < data.product.currentPrice 
-            ? `<span class="text-sm text-savvy-green font-medium">
+          ${data.priceData.lowestPrice.price < data.product.currentPrice
+      ? `<span class="text-sm text-savvy-green font-medium">
                  Save ${data.product.currency}${(data.product.currentPrice - data.priceData.lowestPrice.price).toFixed(2)}
-               </span>` 
-            : ''}
+               </span>`
+      : ''}
         </div>
-        ${data.priceData.priceDropPrediction.isLikely 
-          ? `<div class="mt-1 flex items-center text-xs text-savvy-blue">
+        ${data.priceData.priceDropPrediction.isLikely
+      ? `<div class="mt-1 flex items-center text-xs text-savvy-blue">
                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
                  <polyline points="16 7 22 7 22 13"></polyline>
                </svg>
                Price drop likely in the next 14 days (${data.priceData.priceDropPrediction.confidence}% confidence)
              </div>`
-          : ''}
+      : ''}
       </div>
     </div>
   `;
-  
+
   // Update prices tab
   document.getElementById('savvy-prices-tab').innerHTML = `
     <div class="space-y-6">
@@ -678,7 +678,7 @@ function updateOverlayWithData(data) {
       </div>
     </div>
   `;
-  
+
   // Update reviews tab
   document.getElementById('savvy-reviews-tab').innerHTML = `
     <div class="space-y-6">
@@ -774,7 +774,7 @@ function updateOverlayWithData(data) {
       </div>
     </div>
   `;
-  
+
   // Update alternatives tab
   document.getElementById('savvy-alternatives-tab').innerHTML = `
     <div class="space-y-6">
@@ -813,7 +813,7 @@ function updateOverlayWithData(data) {
       </div>
     </div>
   `;
-  
+
   // Check subscription status and update banner
   checkSubscriptionStatus();
 }
@@ -823,16 +823,16 @@ function renderStars(rating) {
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-  
+
   let starsHTML = '';
-  
+
   // Full stars
   for (let i = 0; i < fullStars; i++) {
     starsHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-savvy-yellow">
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
     </svg>`;
   }
-  
+
   // Half star if needed
   if (hasHalfStar) {
     starsHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" class="text-savvy-yellow">
@@ -840,14 +840,14 @@ function renderStars(rating) {
       <path fill="none" stroke="currentColor" stroke-width="1" d="M12,2 L15.09,8.26 L22,9.27 L17,14.14 L18.18,21.02 L12,17.77 L5.82,21.02 L7,14.14 L2,9.27 L8.91,8.26 L12,2 Z"></path>
     </svg>`;
   }
-  
+
   // Empty stars
   for (let i = 0; i < emptyStars; i++) {
     starsHTML += `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-300 dark:text-gray-600">
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
     </svg>`;
   }
-  
+
   return starsHTML;
 }
 
@@ -857,9 +857,9 @@ async function checkSubscriptionStatus() {
     const response = await chrome.runtime.sendMessage({
       type: 'GET_SUBSCRIPTION_STATUS'
     });
-    
+
     const subscriptionBanner = document.getElementById('savvy-subscription-banner');
-    
+
     if (response.status === 'trial') {
       // Show trial banner with days remaining
       subscriptionBanner.classList.remove('hidden');
@@ -897,7 +897,7 @@ async function loadUserPreferences() {
       'showAlternatives',
       'notifyPriceDrops'
     ]);
-    
+
     userPreferences = {
       isEnabled: data.isEnabled !== undefined ? data.isEnabled : true,
       prioritizeBy: data.prioritizeBy || 'balanced',
@@ -905,7 +905,7 @@ async function loadUserPreferences() {
       showAlternatives: data.showAlternatives !== undefined ? data.showAlternatives : true,
       notifyPriceDrops: data.notifyPriceDrops !== undefined ? data.notifyPriceDrops : true
     };
-    
+
   } catch (error) {
     console.error('Error loading user preferences:', error);
   }
@@ -925,7 +925,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Handle overlay visibility
 function handleOverlayVisibility(enabled) {
   userPreferences.isEnabled = enabled;
-  
+
   if (overlayContainer) {
     if (enabled) {
       overlayContainer.style.display = productData ? 'block' : 'none';
@@ -933,9 +933,46 @@ function handleOverlayVisibility(enabled) {
       overlayContainer.style.display = 'none';
     }
   }
-  
+
   // If enabling and we have product data, show the overlay
   if (enabled && productData) {
     showOverlay();
   }
 }
+
+// Content script for Scout.io
+console.log('Scout.io content script loaded on Walmart');
+
+// Function to extract product information from Walmart page
+function extractProductInfo() {
+  const productData = {
+    title: document.querySelector('h1')?.textContent?.trim(),
+    price: document.querySelector('[data-testid="price-wrap"] [itemprop="price"]')?.textContent?.trim(),
+    rating: document.querySelector('.stars-reviews-count-node')?.textContent?.trim(),
+    availability: document.querySelector('[data-testid="fulfillment-shipping-text"]')?.textContent?.trim()
+  };
+
+  if (productData.title) {
+    chrome.runtime.sendMessage({
+      type: 'PRODUCT_DATA',
+      data: productData
+    });
+  }
+}
+
+// Run when the page loads
+if (document.readyState === 'complete') {
+  extractProductInfo();
+} else {
+  window.addEventListener('load', extractProductInfo);
+}
+
+// Watch for dynamic content changes
+const observer = new MutationObserver(() => {
+  extractProductInfo();
+});
+
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+});

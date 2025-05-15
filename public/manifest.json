@@ -1,4 +1,3 @@
-
 {
   "manifest_version": 3,
   "name": "Scout.io",
@@ -23,11 +22,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "*://*.amazon.com/*",
-    "*://*.bestbuy.com/*",
-    "*://*.walmart.com/*",
-    "*://*.target.com/*",
-    "*://*.ebay.com/*"
+    "*://*.walmart.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -36,14 +31,14 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.amazon.com/*",
-        "*://*.bestbuy.com/*",
-        "*://*.walmart.com/*",
-        "*://*.target.com/*",
-        "*://*.ebay.com/*"
+        "*://*.walmart.com/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ]
     }
   ]
 }

@@ -75,58 +75,58 @@ const mockProducts = [
 const prioritizeOptions = [
   {
     label: "Lowest Price",
-    icon: <ArrowDown className="text-green-500" size={18} />,
+    icon: <ArrowDown className="text-green-600" size={18} />,
     value: "lowest",
     desc: "See the best deals for similar products.",
   },
   {
     label: "Best Reviews",
-    icon: <Star className="text-yellow-400" size={18} />,
+    icon: <Star className="text-green-600" size={18} />,
     value: "review",
     desc: "Products praised by customers.",
   },
   {
     label: "Fast Shipping",
-    icon: <Truck className="text-blue-500" size={18} />,
+    icon: <Truck className="text-green-600" size={18} />,
     value: "fast",
     desc: "Quick delivery options.",
   },
   {
     label: "Balanced",
-    icon: <Equal className="text-purple-500" size={18} />,
+    icon: <Equal className="text-green-600" size={18} />,
     value: "balanced",
     desc: "A smart mix of price, shipping speed, and reviews.",
   },
 ];
 
 const displayOptions = [
-  { label: "Show Trust Scores", icon: <Heart className="text-green-500" size={18} />, value: "trust" },
-  { label: "Show Similar Products", icon: <ArrowUp className="text-blue-500" size={18} />, value: "alts" },
-  { label: "Notify on Price Drops", icon: <Star className="text-yellow-400" size={18} />, value: "price-drops" },
+  { label: "Show Trust Scores", icon: <Heart className="text-green-600" size={18} />, value: "trust" },
+  { label: "Show Similar Products", icon: <ArrowUp className="text-black" size={18} />, value: "alts" },
+  { label: "Notify on Price Drops", icon: <Star className="text-green-600" size={18} />, value: "price-drops" },
 ];
 
 const getFilteredProducts = (mode: string) => {
   console.log("Filtering mode:", mode);
-  
+
   // Define high-review products
   const highReviewProducts = mockProducts.filter(p => p.reviews >= 4.5);
   console.log("High review products:", highReviewProducts.map(p => p.name));
-  
+
   // Define fast shipping products
   const fastShippingProducts = mockProducts.filter(p => p.shipping.includes("1-2") || p.shipping.includes("1 day"));
   console.log("Fast shipping products:", fastShippingProducts.map(p => p.name));
-  
+
   // Define low price products
   const lowestPriceProducts = mockProducts.filter(p => p.tags.includes("lowest"));
   console.log("Lowest price products:", lowestPriceProducts.map(p => p.name));
-  
+
   // Define high quality products
   const highQualityProducts = mockProducts.filter(p => p.quality === "High");
   console.log("High quality products:", highQualityProducts.map(p => p.name));
-  
+
   let result;
-  
-  switch(mode) {
+
+  switch (mode) {
     case "lowest":
       result = mockProducts.filter(p => p.tags?.includes("lowest"));
       break;
@@ -139,44 +139,44 @@ const getFilteredProducts = (mode: string) => {
     case "balanced":
       // Create a set to store unique products
       let balancedSelection = [];
-      
+
       // ALWAYS ensure we include at least one fast shipping product in the balanced view
-      const fastShippingProducts = mockProducts.filter(p => 
+      const fastShippingProducts = mockProducts.filter(p =>
         p.shipping?.includes("1-2") || p.shipping?.includes("1 day")
       );
-      
+
       if (fastShippingProducts.length > 0) {
         balancedSelection.push(fastShippingProducts[0]);
       }
-      
+
       // ALWAYS include a high review product (if not already included)
       const highReviewProducts = mockProducts.filter(p => p.reviews && p.reviews >= 4.5);
-      
+
       if (highReviewProducts.length > 0) {
-        const reviewProduct = highReviewProducts.find(p => 
+        const reviewProduct = highReviewProducts.find(p =>
           !balancedSelection.some(cp => cp.id === p.id)
         );
         if (reviewProduct) {
           balancedSelection.push(reviewProduct);
         }
       }
-      
+
       // ALWAYS include a lowest price product (if not already included)
       const lowestPriceProducts = mockProducts.filter(p => p.tags?.includes("lowest"));
-      
-      const priceProduct = lowestPriceProducts.find(p => 
+
+      const priceProduct = lowestPriceProducts.find(p =>
         !balancedSelection.some(cp => cp.id === p.id)
       );
       if (priceProduct) {
         balancedSelection.push(priceProduct);
       }
-      
+
       // If we still have room for more products, add other balanced tagged products
-      const balancedTaggedProducts = mockProducts.filter(p => 
-        p.tags?.includes("balanced") && 
+      const balancedTaggedProducts = mockProducts.filter(p =>
+        p.tags?.includes("balanced") &&
         !balancedSelection.some(cp => cp.id === p.id)
       );
-      
+
       for (const product of balancedTaggedProducts) {
         if (balancedSelection.length < 5) {
           balancedSelection.push(product);
@@ -184,13 +184,13 @@ const getFilteredProducts = (mode: string) => {
           break; // We've reached our limit
         }
       }
-      
+
       result = balancedSelection;
       break;
     default:
       result = mockProducts;
   }
-  
+
   console.log("Final filtered products:", result.map(p => p.name));
   return result;
 };
@@ -204,7 +204,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
   const [showAlternatives, setShowAlternatives] = useState(true);
   const [notifyPriceDrops, setNotifyPriceDrops] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState(getFilteredProducts("balanced"));
-  
+
   // Update filtered products when priority changes
   useEffect(() => {
     setFilteredProducts(getFilteredProducts(selectedPriority));
@@ -225,56 +225,46 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="max-w-xs w-[370px] !p-0 rounded-2xl shadow-2xl border-0 bg-gradient-to-br from-[#F1EDFC] to-[#E6FAFB] overflow-hidden"
+        className="max-w-xs w-[370px] !p-0 rounded-2xl shadow-2xl border-0 bg-gradient-to-br from-gray-50 to-white overflow-hidden"
       >
         <div className="relative pb-2">
-          <div className="absolute inset-0 h-[160px] bg-gradient-to-tr from-purple-500/80 via-blue-500/70 to-[#d6bcfa] rounded-b-3xl blur-[1px] -z-1" />
-          <div className="relative z-10 flex flex-col items-center pt-9 pb-6">
-            <div className="mb-2 flex items-center justify-center">
-              <span className="w-12 h-12 rounded-2xl bg-white/50 flex items-center justify-center shadow-lg ring-2 ring-white/60 backdrop-blur-sm mr-0">
-                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                  <rect x="6" y="6" width="24" height="24" rx="7" fill="#8B5CF6" />
-                  <rect x="10.5" y="10.5" width="15" height="15" rx="4" fill="#fff" opacity="0.8"/>
-                  <rect x="14" y="14" width="8" height="8" rx="2" fill="#60A5FA" opacity="0.85"/>
-                </svg>
-              </span>
-            </div>
-            <span className="font-extrabold text-[20px] tracking-tight text-purple-600 drop-shadow text-center">
+          <div className="absolute inset-0 h-[120px] bg-black rounded-b-3xl blur-[1px] -z-1" />
+          <div className="relative z-10 flex flex-col items-center pt-6 pb-4">
+            <span className="font-extrabold text-[20px] tracking-tight text-white drop-shadow text-center">
               Scout.io
             </span>
-            <div className="inline-block align-top mt-2 px-3 py-1 rounded-md bg-white/60 font-semibold text-xs uppercase text-purple-600 tracking-wide shadow-sm">
+            <div className="inline-block align-top mt-2 px-3 py-1 rounded-md bg-white/60 font-semibold text-xs uppercase text-black tracking-wide shadow-sm">
               BETA
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-7 pb-2 pt-3">
+        <div className="flex items-center justify-between px-7 pb-4 pt-6">
           <div>
-            <h2 className="text-sm font-semibold mb-1 text-purple-600 flex items-center gap-1 drop-shadow">
-              <Lock className="text-purple-600 mr-1" size={15} /> Enable Extension
+            <h2 className="text-sm font-semibold mb-1 text-black flex items-center gap-1">
+              <Lock className="text-green-600 mr-1" size={15} /> Enable Extension
             </h2>
             <p className="text-xs text-gray-500">
               Show overlay while browsing products
             </p>
           </div>
-          <span className="relative inline-flex items-center cursor-pointer">
+          <span className="relative inline-flex items-center cursor-pointer ml-4">
             <input type="checkbox" defaultChecked className="peer sr-only" />
-            <span className="w-11 h-6 bg-gray-200 peer-checked:bg-purple-600 rounded-full transition peer-focus:ring-2 peer-focus:ring-purple-500/40" />
-            <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white border border-gray-300 peer-checked:border-purple-600 rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow" />
+            <span className="w-11 h-6 bg-gray-200 peer-checked:bg-green-600 rounded-full transition peer-focus:ring-2 peer-focus:ring-green-500/40" />
+            <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white border border-gray-300 peer-checked:border-green-600 rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow" />
           </span>
         </div>
 
-        <div className="mt-2 px-7">
-          <h2 className="text-sm font-bold text-gray-700 mb-2">Prioritize Results By</h2>
-          <div className="grid grid-cols-2 gap-3 mb-2">
+        <div className="mt-4 px-7">
+          <h2 className="text-sm font-bold text-gray-700 mb-3">Prioritize Results By</h2>
+          <div className="grid grid-cols-2 gap-3 mb-3">
             {prioritizeOptions.map((opt) => (
               <button
                 key={opt.value}
-                className={`flex flex-1 items-center gap-2 px-3 py-2 rounded-xl border transition-all border-transparent shadow-md hover:shadow-xl focus:outline-none
-                  ${
-                    selectedPriority === opt.value
-                      ? "bg-purple-600/90 text-white scale-[1.03] border-purple-500 shadow-lg"
-                      : "bg-white text-gray-700 hover:bg-purple-500/5"
+                className={`flex flex-1 items-center gap-2 px-3 py-2.5 rounded-xl border transition-all border-transparent shadow-md hover:shadow-xl focus:outline-none
+                  ${selectedPriority === opt.value
+                    ? "bg-black text-white scale-[1.03] border-gray-800 shadow-lg"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
                   }
                 `}
                 onClick={() => setSelectedPriority(opt.value)}
@@ -288,13 +278,13 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
               </button>
             ))}
           </div>
-          <div className="text-xs text-gray-500 font-medium min-h-[18px] mb-1 px-1">
+          <div className="text-xs text-gray-500 font-medium min-h-[18px] mb-4 px-1">
             {prioritizeOptions.find((o) => o.value === selectedPriority)?.desc}
           </div>
         </div>
 
-        <div className="mt-1 px-5 pb-1">
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
+        <div className="px-7 mb-4">
+          <div className="flex gap-3 overflow-x-auto hide-scrollbar py-1">
             {filteredProducts.length ? (
               filteredProducts.slice(0, 3).map((product) => (
                 <ProductCard
@@ -319,7 +309,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                 />
               ))
             ) : (
-              <div className="text-xs text-gray-400 px-2 py-4">
+              <div className="text-xs text-gray-400 px-2 py-4 w-full text-center">
                 No products found for this mode.
               </div>
             )}
@@ -327,40 +317,40 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
         </div>
 
         <div className="mt-2 px-7">
-          <h2 className="text-sm font-bold text-gray-700 mb-2">Display Options</h2>
+          <h2 className="text-sm font-bold text-gray-700 mb-3">Display Options</h2>
           <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer group">
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-4 py-3 text-sm shadow hover:shadow-md transition cursor-pointer group">
               <input
                 type="checkbox"
-                className="accent-[#8B5CF6] mr-1"
+                className="accent-green-600 mr-1"
                 checked={showTrustScores}
                 onChange={() => setShowTrustScores((v) => !v)}
               />
-              <Heart className="text-green-500" size={18} />
+              <Heart className="text-green-600" size={18} />
               <span className="font-medium text-gray-700">
                 Show Trust Scores
               </span>
             </label>
-            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer group">
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-4 py-3 text-sm shadow hover:shadow-md transition cursor-pointer group">
               <input
                 type="checkbox"
-                className="accent-[#8B5CF6] mr-1"
+                className="accent-green-600 mr-1"
                 checked={showAlternatives}
                 onChange={() => setShowAlternatives((v) => !v)}
               />
-              <ArrowUp className="text-blue-500" size={18} />
+              <ArrowUp className="text-black" size={18} />
               <span className="font-medium text-gray-700">
                 Show Similar Products
               </span>
             </label>
-            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 text-sm shadow hover:shadow-md transition cursor-pointer group">
+            <label className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-4 py-3 text-sm shadow hover:shadow-md transition cursor-pointer group">
               <input
                 type="checkbox"
-                className="accent-[#8B5CF6] mr-1"
+                className="accent-green-600 mr-1"
                 checked={notifyPriceDrops}
                 onChange={handleNotifyPriceDrops}
               />
-              <Star className="text-yellow-400 group-hover:scale-110 transition-transform" size={18} />
+              <Star className="text-green-600 group-hover:scale-110 transition-transform" size={18} />
               <span className="font-medium text-gray-700">
                 Notify on Price Drops
               </span>
@@ -370,46 +360,22 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
 
         {notifyPriceDrops && (
           <div className="px-7 mt-4">
-            <div className="bg-yellow-400/15 border border-yellow-400/30 text-yellow-600 rounded-xl px-4 py-3 text-xs font-semibold shadow-sm flex items-center gap-2 animate-fade-in">
-              <BellRing className="text-yellow-400" size={18} />
+            <div className="bg-red-400/15 border border-red-400/30 text-red-600 rounded-xl px-4 py-3 text-xs font-semibold shadow-sm flex items-center gap-2 animate-fade-in">
+              <BellRing className="text-red-400" size={18} />
               Price drop alerts are now active!
             </div>
           </div>
         )}
 
-        {showAlternatives && (
-          <div className="px-7 mt-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-2">
-              Similar Products
-            </h2>
-            <div className="flex flex-col gap-3">
-              <div className="bg-white border border-gray-100 rounded-lg px-4 py-3 shadow">
-                <p className="text-xs text-gray-600 mb-2">A smart mix of price, speed, quality, and reviews.</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {filteredProducts.slice(0, 3).map((product) => (
-                    <div key={`alt-${product.id}`} className="bg-gray-50 rounded-md p-2 text-center">
-                      <div className="w-full h-10 mb-1 overflow-hidden rounded">
-                        <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="text-[10px] font-medium text-gray-700 truncate">{product.name}</div>
-                      <div className="text-[11px] font-bold text-purple-600">${product.price}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <footer className="px-7 py-5 mt-3 border-t border-gray-100 bg-transparent">
+        <footer className="px-7 py-5 mt-6 border-t border-gray-100 bg-transparent">
           <div className="flex gap-6 justify-center">
-            <a href="#" className="text-xs text-gray-500 hover:text-purple-600 transition font-medium">
+            <a href="#" className="text-xs text-gray-500 hover:text-black transition font-medium">
               Help
             </a>
-            <a href="#" className="text-xs text-gray-500 hover:text-purple-600 transition font-medium">
+            <a href="#" className="text-xs text-gray-500 hover:text-black transition font-medium">
               Privacy
             </a>
-            <a href="#" className="text-xs text-gray-500 hover:text-purple-600 transition font-medium">
+            <a href="#" className="text-xs text-gray-500 hover:text-black transition font-medium">
               Terms
             </a>
           </div>
