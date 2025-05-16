@@ -81,13 +81,13 @@ const prioritizeOptions = [
   },
   {
     label: "Best Reviews",
-    icon: <Star className="text-green-600" size={18} />,
+    icon: <Star className="text-yellow-500" size={18} />,
     value: "review",
     desc: "Products praised by customers.",
   },
   {
     label: "Fast Shipping",
-    icon: <Truck className="text-green-600" size={18} />,
+    icon: <Truck className="text-blue-600" size={18} />,
     value: "fast",
     desc: "Quick delivery options.",
   },
