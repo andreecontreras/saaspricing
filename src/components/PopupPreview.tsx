@@ -9,7 +9,8 @@ import {
   Heart,
   Lock,
   BellRing,
-  Sparkles
+  Sparkles,
+  Search
 } from "lucide-react";
 import { toast } from "sonner";
 import ProductCard from "@/components/ui/product-card";
@@ -200,15 +201,24 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
   onOpenChange,
 }) => {
   const [selectedPriority, setSelectedPriority] = useState("balanced");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showTrustScores, setShowTrustScores] = useState(true);
   const [showAlternatives, setShowAlternatives] = useState(true);
   const [notifyPriceDrops, setNotifyPriceDrops] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState(getFilteredProducts("balanced"));
 
-  // Update filtered products when priority changes
+  // Update filtered products when priority or search changes
   useEffect(() => {
-    setFilteredProducts(getFilteredProducts(selectedPriority));
-  }, [selectedPriority]);
+    const products = getFilteredProducts(selectedPriority);
+    if (searchQuery) {
+      const searchResults = products.filter(product =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredProducts(searchResults);
+    } else {
+      setFilteredProducts(products);
+    }
+  }, [selectedPriority, searchQuery]);
 
   const handleNotifyPriceDrops = () => {
     const newValue = !notifyPriceDrops;
@@ -255,7 +265,33 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
           </span>
         </div>
 
-        <div className="mt-4 px-7">
+        <div className="px-7 mt-4">
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all bg-white shadow-sm"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {searchQuery && filteredProducts.length === 0 && (
+              <div className="text-sm text-gray-500 mt-2 px-1">
+                No products found for "{searchQuery}"
+              </div>
+            )}
+          </div>
+
           <h2 className="text-sm font-bold text-gray-700 mb-3">Prioritize Results By</h2>
           <div className="grid grid-cols-2 gap-3 mb-3">
             {prioritizeOptions.map((opt) => (
