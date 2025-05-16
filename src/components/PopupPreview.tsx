@@ -93,7 +93,7 @@ const prioritizeOptions = [
   },
   {
     label: "Balanced",
-    icon: <Equal className="text-green-600" size={18} />,
+    icon: <Equal className="text-purple-600" size={18} />,
     value: "balanced",
     desc: "A smart mix of price, shipping speed, and reviews.",
   },
