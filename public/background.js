@@ -11,58 +11,53 @@ let currentProductData = null;
 const priceHistory = {};
 
 // Listen for installation event
-chrome.runtime.onInstalled.addListener(async () => {
-  console.log('Scout.io extension installed');
-
-  // Set default user preferences
-  await chrome.storage.sync.set({
-    isEnabled: true,
-    prioritizeBy: 'balanced', // 'price', 'reviews', 'shipping', 'balanced'
-    showTrustScores: true,
-    showAlternatives: true,
-    notifyPriceDrops: true,
-    minimumPriceDropPercent: 5, // Notify only for 5% or more price drop
-    userSubscription: 'free', // 'free'
-    apifyApiKey: 'apify_api_y9gocF4ETXbAde3CoqrbjiDOYpztOQ4zcywQ' // Initialize with hardcoded API key
-  });
-
-  // Initialize Apify integration
-  const apifyInitialized = await initApifyIntegration();
-  console.log('Apify integration initialized:', apifyInitialized);
-
-  // Load any saved price history from storage
-  chrome.storage.local.get('priceHistory', (data) => {
-    if (data.priceHistory) {
-      Object.assign(priceHistory, data.priceHistory);
-      console.log('Loaded price history:', priceHistory);
-    }
-  });
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    // Set default settings
+    chrome.storage.sync.set({
+      theme: 'system',
+      notifications: true,
+      priceAlerts: true,
+      compactMode: false,
+      shareAnalytics: true,
+      searchHistory: true,
+      currency: 'USD'
+    });
+  }
 });
 
 // Listen for messages from content scripts or popup
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Background script received message:', message.type);
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'SCRAPE_PRODUCT') {
+    handleProductScraping(request.url, sendResponse);
+    return true; // Will respond asynchronously
+  }
 
-  if (message.type === 'PRODUCT_DETECTED') {
-    console.log('Product detected:', message.data);
-    activeProduct = message.data;
-    handleProductDetection(message.data, sender.tab?.id);
+  if (request.type === 'CHECK_PRICE_ALERTS') {
+    checkPriceAlerts();
+    sendResponse({ success: true });
+  }
+
+  if (request.type === 'PRODUCT_DETECTED') {
+    console.log('Product detected:', request.data);
+    activeProduct = request.data;
+    handleProductDetection(request.data, sender.tab?.id);
     sendResponse({ success: true });
     return true; // Keep the messaging channel open for async response
-  } else if (message.type === 'GET_PRODUCT_DATA') {
+  } else if (request.type === 'GET_PRODUCT_DATA') {
     console.log('Product data requested, sending:', currentProductData);
     sendResponse({ success: true, data: currentProductData });
     return false;
-  } else if (message.type === 'CHECK_ACTIVE_PRODUCT') {
+  } else if (request.type === 'CHECK_ACTIVE_PRODUCT') {
     console.log('Checking for active product:', activeProduct !== null);
     sendResponse({ hasActiveProduct: activeProduct !== null });
     return false;
-  } else if (message.type === 'SAVE_APIFY_API_KEY') {
-    saveApifyApiKey(message.apiKey).then(sendResponse);
+  } else if (request.type === 'SAVE_APIFY_API_KEY') {
+    saveApifyApiKey(request.apiKey).then(sendResponse);
     return true; // Keep the messaging channel open for async response
-  } else if (message.type === 'TEST_APIFY_API_KEY') {
-    console.log('Testing Apify API key:', message.apiKey);
-    testApifyApiKey(message.apiKey)
+  } else if (request.type === 'TEST_APIFY_API_KEY') {
+    console.log('Testing Apify API key:', request.apiKey);
+    testApifyApiKey(request.apiKey)
       .then(result => {
         console.log('API key test result:', result);
         sendResponse({ success: result });
@@ -72,8 +67,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       });
     return true; // Keep messaging channel open
-  } else if (message.type === 'SCRAPE_PRODUCT_URL') {
-    scrapeProductURL(message.url, sender.tab?.id)
+  } else if (request.type === 'SCRAPE_PRODUCT_URL') {
+    scrapeProductURL(request.url, sender.tab?.id)
       .then(result => {
         if (result) {
           activeProduct = result;
@@ -82,21 +77,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep the messaging channel open for async response
-  } else if (message.type === 'CLEAR_ACTIVE_PRODUCT') {
+  } else if (request.type === 'CLEAR_ACTIVE_PRODUCT') {
     console.log('Clearing active product');
     activeProduct = null;
     currentProductData = null;
     sendResponse({ success: true });
     return false;
-  } else if (message.type === 'TRACK_PRICE_DROPS') {
-    trackPriceDrops(message.productUrl, message.currentPrice);
+  } else if (request.type === 'TRACK_PRICE_DROPS') {
+    trackPriceDrops(request.productUrl, request.currentPrice);
     sendResponse({ success: true });
     return false;
-  } else if (message.type === 'CHECK_PRICE_HISTORY') {
-    const history = getPriceHistory(message.productUrl);
+  } else if (request.type === 'CHECK_PRICE_HISTORY') {
+    const history = getPriceHistory(request.productUrl);
     sendResponse({ success: true, history: history });
     return false;
-  } else if (message.type === 'FORCE_PRODUCT_DETECTION') {
+  } else if (request.type === 'FORCE_PRODUCT_DETECTION') {
     // Force detection of a product for testing purposes
     console.log('Force product detection received');
 
@@ -111,7 +106,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     activeProduct = mockProduct;
 
     // Handle the product detection with the active tab
-    const tabId = message.tabId || (sender.tab && sender.tab.id);
+    const tabId = request.tabId || (sender.tab && sender.tab.id);
     if (tabId) {
       handleProductDetection(mockProduct, tabId);
 
@@ -129,7 +124,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: 'No tab ID provided' });
     }
     return true;
-  } else if (message.type === 'REFRESH_PRODUCT_DISPLAY') {
+  } else if (request.type === 'REFRESH_PRODUCT_DISPLAY') {
     // Just send back the current product data
     if (currentProductData) {
       sendResponse({ success: true, data: currentProductData });
@@ -166,8 +161,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: 'Product data being generated' });
     }
     return false;
-  } else if (message.type === 'PRODUCT_DATA') {
-    console.log('Product data received:', message.data);
+  } else if (request.type === 'PRODUCT_DATA') {
+    console.log('Product data received:', request.data);
     sendResponse({ status: 'success' });
   }
 });
@@ -511,4 +506,118 @@ function generateMockAlternatives(productData) {
       seller: "Best Buy"
     }
   ];
+}
+
+// Handle product scraping requests
+async function handleProductScraping(url, sendResponse) {
+  try {
+    // Get API credentials from storage
+    const { apifyApiKey, apifyActorId } = await chrome.storage.sync.get([
+      'apifyApiKey',
+      'apifyActorId'
+    ]);
+
+    if (!apifyApiKey || !apifyActorId) {
+      sendResponse({ error: 'API credentials not configured' });
+      return;
+    }
+
+    // Make API request to Apify
+    const response = await fetch('https://api.apify.com/v2/acts/' + apifyActorId + '/runs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apifyApiKey}`
+      },
+      body: JSON.stringify({
+        startUrls: [{ url }],
+        maxRequestsPerCrawl: 1
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    sendResponse({ success: true, runId: data.id });
+
+  } catch (error) {
+    console.error('Scraping error:', error);
+    sendResponse({ error: error.message });
+  }
+}
+
+// Check price alerts periodically
+async function checkPriceAlerts() {
+  try {
+    const { priceAlerts, watchedProducts } = await chrome.storage.sync.get([
+      'priceAlerts',
+      'watchedProducts'
+    ]);
+
+    if (!priceAlerts || !watchedProducts?.length) {
+      return;
+    }
+
+    // Check each watched product
+    for (const product of watchedProducts) {
+      const currentPrice = await fetchCurrentPrice(product.url);
+      if (currentPrice < product.targetPrice) {
+        showPriceAlert(product, currentPrice);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking price alerts:', error);
+  }
+}
+
+// Show price alert notification
+function showPriceAlert(product, currentPrice) {
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'icons/icon128.png',
+    title: 'Price Drop Alert!',
+    message: `${product.name} is now ${currentPrice}! (Was: ${product.price})`,
+    buttons: [{ title: 'View Deal' }]
+  });
+}
+
+// Handle notification button clicks
+chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+  if (buttonIndex === 0) { // "View Deal" button
+    chrome.storage.sync.get(['watchedProducts'], (result) => {
+      const product = result.watchedProducts.find(p => p.id === notificationId);
+      if (product) {
+        chrome.tabs.create({ url: product.url });
+      }
+    });
+  }
+});
+
+// Handle tab updates to inject content script when needed
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    try {
+      const url = new URL(tab.url);
+      if (isShoppingWebsite(url.hostname)) {
+        chrome.scripting.executeScript({
+          target: { tabId },
+          files: ['contentScript.js']
+        });
+      }
+    } catch (error) {
+      console.error('Error processing URL:', error);
+    }
+  }
+});
+
+// Helper function to check if the website is a supported shopping site
+function isShoppingWebsite(hostname) {
+  const supportedDomains = [
+    'amazon.com',
+    'ebay.com',
+    // Add more supported domains here
+  ];
+  return supportedDomains.some(domain => hostname.includes(domain));
 }

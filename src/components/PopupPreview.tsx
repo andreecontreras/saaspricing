@@ -534,21 +534,18 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
                 href="/help"
                 className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                 Help
               </a>
               <a
                 href="/privacy"
                 className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                 Privacy
               </a>
               <a
                 href="/terms"
                 className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                 Terms
               </a>
             </div>

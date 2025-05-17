@@ -48,7 +48,7 @@ const SettingsPage: React.FC = () => {
                     icon: <Mail className="text-gray-400" size={16} />,
                     action: {
                         label: 'Change',
-                        onClick: () => {/* Handle email change */ }
+                        onClick: () => navigate('/settings/email')
                     }
                 },
                 {
@@ -59,7 +59,7 @@ const SettingsPage: React.FC = () => {
                     action: {
                         label: 'Upgrade',
                         variant: 'primary',
-                        onClick: () => {/* Handle subscription upgrade */ }
+                        onClick: () => navigate('/settings/upgrade')
                     },
                     badge: {
                         text: 'Free',
@@ -73,7 +73,7 @@ const SettingsPage: React.FC = () => {
                     icon: <Lock className="text-gray-400" size={16} />,
                     action: {
                         label: 'Update',
-                        onClick: () => {/* Handle password change */ }
+                        onClick: () => navigate('/settings/password')
                     }
                 },
                 {
