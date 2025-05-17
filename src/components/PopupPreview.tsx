@@ -1,5 +1,6 @@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import {
   Star,
   ArrowUp,
@@ -13,7 +14,8 @@ import {
   Search,
   DollarSign,
   Check,
-  Bell
+  Bell,
+  Settings
 } from "lucide-react";
 import { toast } from "sonner";
 import ProductCard from "@/components/ui/product-card";
@@ -213,6 +215,7 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
   open,
   onOpenChange,
 }) => {
+  const navigate = useNavigate();
   const [selectedPriority, setSelectedPriority] = useState("balanced");
   const [searchQuery, setSearchQuery] = useState("");
   const [showTrustScores, setShowTrustScores] = useState(true);
@@ -369,6 +372,13 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
     );
   };
 
+  const handleSettingsClick = () => {
+    // Close the popup first
+    onOpenChange(false);
+    // Then navigate to settings
+    navigate('/settings');
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -517,28 +527,42 @@ const PopupPreview: React.FC<{ open: boolean; onOpenChange: (open: boolean) => v
 
         {/* Fixed Footer */}
         <footer className="flex-shrink-0 px-7 py-5 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
-          <div className="flex gap-6 justify-center items-center">
-            <a
-              href="/help"
-              className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-              Help
-            </a>
-            <a
-              href="/privacy"
-              className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              Privacy
-            </a>
-            <a
-              href="/terms"
-              className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-              Terms
-            </a>
+          <div className="flex items-center">
+            <div className="flex-1"></div>
+            <div className="flex gap-6 items-center px-6">
+              <a
+                href="/help"
+                className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                Help
+              </a>
+              <a
+                href="/privacy"
+                className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                Privacy
+              </a>
+              <a
+                href="/terms"
+                className="text-sm text-gray-600 hover:text-black transition-all hover:scale-105 font-medium flex items-center gap-1"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                Terms
+              </a>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <div className="flex items-center pl-6 border-l border-gray-200">
+                <button
+                  onClick={handleSettingsClick}
+                  className="text-gray-600 hover:text-black transition-all hover:scale-105"
+                  title="Settings"
+                >
+                  <Settings size={18} />
+                </button>
+              </div>
+            </div>
           </div>
         </footer>
 
