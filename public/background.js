@@ -10,21 +10,85 @@ let currentProductData = null;
 // Track price history
 const priceHistory = {};
 
+// Track notification check interval
+let priceCheckInterval = null;
+
 // Listen for installation event
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     // Set default settings
     chrome.storage.sync.set({
-      theme: 'system',
+      theme: 'light',
+      priceDropAlerts: true,
+      alertSound: true,
+      checkFrequency: '15 minutes',
       notifications: true,
-      priceAlerts: true,
       compactMode: false,
       shareAnalytics: true,
       searchHistory: true,
       currency: 'USD'
     });
+
+    // Start price check interval
+    setupPriceCheckInterval();
   }
 });
+
+// Listen for theme changes
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'sync' && changes.theme) {
+    // Apply theme to all extension pages
+    const newTheme = changes.theme.newValue;
+    applyTheme(newTheme);
+  }
+});
+
+// Apply theme to extension pages
+function applyTheme(theme) {
+  // Get all extension tabs
+  chrome.tabs.query({ url: chrome.runtime.getURL('/*') }, (tabs) => {
+    tabs.forEach((tab) => {
+      if (tab.id) {
+        chrome.tabs.sendMessage(tab.id, { type: 'THEME_CHANGED', theme });
+      }
+    });
+  });
+}
+
+// Setup price check interval based on settings
+async function setupPriceCheckInterval() {
+  // Clear existing interval if any
+  if (priceCheckInterval) {
+    clearInterval(priceCheckInterval);
+  }
+
+  // Get current settings
+  const { priceDropAlerts, checkFrequency } = await chrome.storage.sync.get([
+    'priceDropAlerts',
+    'checkFrequency'
+  ]);
+
+  // Only setup interval if price drop alerts are enabled
+  if (priceDropAlerts) {
+    // Convert frequency setting to milliseconds
+    const frequencyMap = {
+      '5 minutes': 5 * 60 * 1000,
+      '15 minutes': 15 * 60 * 1000,
+      '30 minutes': 30 * 60 * 1000,
+      '1 hour': 60 * 60 * 1000
+    };
+
+    const interval = frequencyMap[checkFrequency] || frequencyMap['15 minutes'];
+
+    // Setup new interval
+    priceCheckInterval = setInterval(() => {
+      checkPriceAlerts();
+    }, interval);
+
+    // Do an initial check
+    checkPriceAlerts();
+  }
+}
 
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -164,6 +228,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.type === 'PRODUCT_DATA') {
     console.log('Product data received:', request.data);
     sendResponse({ status: 'success' });
+  }
+
+  // Add handler for notification setting changes
+  if (request.type === 'NOTIFICATION_SETTINGS_CHANGED') {
+    setupPriceCheckInterval();
+    sendResponse({ success: true });
   }
 });
 
@@ -551,20 +621,35 @@ async function handleProductScraping(url, sendResponse) {
 // Check price alerts periodically
 async function checkPriceAlerts() {
   try {
-    const { priceAlerts, watchedProducts } = await chrome.storage.sync.get([
-      'priceAlerts',
-      'watchedProducts'
+    const { priceDropAlerts, watchedProducts, alertSound } = await chrome.storage.sync.get([
+      'priceDropAlerts',
+      'watchedProducts',
+      'alertSound'
     ]);
 
-    if (!priceAlerts || !watchedProducts?.length) {
+    if (!priceDropAlerts || !watchedProducts?.length) {
       return;
     }
 
+    console.log('Checking price alerts for', watchedProducts.length, 'products');
+
     // Check each watched product
     for (const product of watchedProducts) {
-      const currentPrice = await fetchCurrentPrice(product.url);
-      if (currentPrice < product.targetPrice) {
-        showPriceAlert(product, currentPrice);
+      try {
+        const currentPrice = await fetchCurrentPrice(product.url);
+
+        if (currentPrice && currentPrice < product.targetPrice) {
+          showPriceAlert(product, currentPrice, alertSound);
+
+          // Update the target price to the new lower price
+          await updateWatchedProduct(product.url, {
+            ...product,
+            targetPrice: currentPrice,
+            lastChecked: Date.now()
+          });
+        }
+      } catch (error) {
+        console.error('Error checking price for product:', product.url, error);
       }
     }
   } catch (error) {
@@ -573,14 +658,46 @@ async function checkPriceAlerts() {
 }
 
 // Show price alert notification
-function showPriceAlert(product, currentPrice) {
+function showPriceAlert(product, currentPrice, playSound = true) {
+  // Create notification
   chrome.notifications.create({
     type: 'basic',
     iconUrl: 'icons/icon128.png',
     title: 'Price Drop Alert!',
-    message: `${product.name} is now ${currentPrice}! (Was: ${product.price})`,
-    buttons: [{ title: 'View Deal' }]
+    message: `${product.title} is now $${currentPrice.toFixed(2)}! (Was: $${product.price.toFixed(2)})`,
+    buttons: [{ title: 'View Deal' }],
+    priority: 2
   });
+
+  // Play notification sound if enabled
+  if (playSound) {
+    const audio = new Audio(chrome.runtime.getURL('sounds/notification.mp3'));
+    audio.play().catch(error => {
+      console.error('Error playing notification sound:', error);
+    });
+  }
+}
+
+// Update watched product in storage
+async function updateWatchedProduct(productUrl, updatedProduct) {
+  const { watchedProducts } = await chrome.storage.sync.get(['watchedProducts']);
+
+  const updatedProducts = watchedProducts.map(product =>
+    product.url === productUrl ? updatedProduct : product
+  );
+
+  await chrome.storage.sync.set({ watchedProducts: updatedProducts });
+}
+
+// Fetch current price for a product
+async function fetchCurrentPrice(productUrl) {
+  try {
+    const data = await quickScrapeProductURL(productUrl);
+    return data?.price || null;
+  } catch (error) {
+    console.error('Error fetching current price:', error);
+    return null;
+  }
 }
 
 // Handle notification button clicks

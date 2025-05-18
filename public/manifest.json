@@ -40,7 +40,8 @@
         "<all_urls>"
       ],
       "js": [
-        "contentScript.js"
+        "contentScript.js",
+        "themeHandler.js"
       ]
     }
   ]

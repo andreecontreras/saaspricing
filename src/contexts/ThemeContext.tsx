@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
     theme: Theme;
@@ -13,10 +13,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [theme, setTheme] = useState<Theme>(() => {
         // Try to get theme from localStorage
         const savedTheme = localStorage.getItem('scout-theme');
-        if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+        if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
             return savedTheme as Theme;
         }
-        return 'system';
+        // Default to light theme
+        return 'light';
     });
 
     useEffect(() => {
@@ -26,29 +27,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Apply theme to document
         const root = window.document.documentElement;
         root.classList.remove('light', 'dark');
-
-        if (theme === 'system') {
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            root.classList.add(systemTheme);
-        } else {
-            root.classList.add(theme);
-        }
-    }, [theme]);
-
-    // Listen for system theme changes
-    useEffect(() => {
-        if (theme === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-            const handleChange = () => {
-                const root = window.document.documentElement;
-                root.classList.remove('light', 'dark');
-                root.classList.add(mediaQuery.matches ? 'dark' : 'light');
-            };
-
-            mediaQuery.addEventListener('change', handleChange);
-            return () => mediaQuery.removeEventListener('change', handleChange);
-        }
+        root.classList.add(theme);
     }, [theme]);
 
     return (

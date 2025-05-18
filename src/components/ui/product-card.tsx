@@ -39,7 +39,7 @@ const ProductCard = ({
       style={{ minWidth: "8.5rem" }}
     >
       <div className="w-24 h-20 rounded-xl overflow-hidden mb-2 relative">
-        <AspectRatio ratio={6/5} className="w-full h-full">
+        <AspectRatio ratio={6 / 5} className="w-full h-full">
           <img
             src={product.img}
             className="w-full h-full object-cover transition-all group-hover:brightness-90"
@@ -47,11 +47,11 @@ const ProductCard = ({
           />
         </AspectRatio>
       </div>
-      
+
       <div className="font-semibold text-xs text-gray-800 text-center truncate w-full mb-0.5">
         {product.name}
       </div>
-      
+
       <div className="flex items-end gap-1 mb-1">
         <span className="text-purple-600 font-bold text-sm">
           ${product.price}
@@ -62,7 +62,7 @@ const ProductCard = ({
           </span>
         ) : null}
       </div>
-      
+
       <div className="flex items-center justify-center text-[11px] gap-1 text-gray-500">
         {(product.shipping?.includes("1-2") || product.shipping?.includes("1 day")) ? (
           <>
